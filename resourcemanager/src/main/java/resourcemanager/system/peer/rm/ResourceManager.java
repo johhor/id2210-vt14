@@ -48,9 +48,6 @@ public final class ResourceManager extends ComponentDefinition {
     private RmConfiguration configuration;
     Random random;
     private AvailableResources availableResources;
-    // When you partition the index you need to find new nodes
-    // This is a routing table maintaining a list of pairs in each partition.
-    private Map<Integer, List<PeerDescriptor>> routingTable;
     Comparator<PeerDescriptor> peerAgeComparator = new Comparator<PeerDescriptor>() {
         @Override
         public int compare(PeerDescriptor t, PeerDescriptor t1) {
@@ -79,7 +76,6 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(RmInit init) {
             self = init.getSelf();
             configuration = init.getConfiguration();
-            routingTable = new HashMap<Integer, List<PeerDescriptor>>(configuration.getNumPartitions());
             random = new Random(init.getConfiguration().getSeed());
             availableResources = init.getAvailableResources();
             long period = configuration.getPeriod();
@@ -131,24 +127,6 @@ public final class ResourceManager extends ComponentDefinition {
             neighbours.clear();
             neighbours.addAll(event.getSample());
 
-            // update routing tables
-            for (Address p : neighbours) {
-                int partition = p.getId() % configuration.getNumPartitions();
-                List<PeerDescriptor> nodes = routingTable.get(partition);
-                if (nodes == null) {
-                    nodes = new ArrayList<PeerDescriptor>();
-                    routingTable.put(partition, nodes);
-                }
-                // Note - this might replace an existing entry in Lucene
-                nodes.add(new PeerDescriptor(p));
-                // keep the freshest descriptors in this partition
-                Collections.sort(nodes, peerAgeComparator);
-                List<PeerDescriptor> nodesToRemove = new ArrayList<PeerDescriptor>();
-                for (int i = nodes.size(); i > configuration.getMaxNumRoutingEntries(); i--) {
-                    nodesToRemove.add(nodes.get(i - 1));
-                }
-                nodes.removeAll(nodesToRemove);
-            }
         }
     };
 	

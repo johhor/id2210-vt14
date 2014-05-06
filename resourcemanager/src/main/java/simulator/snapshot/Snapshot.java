@@ -63,10 +63,10 @@ public class Snapshot {
 
     private static String reportDetails() {
         String str = "---\n";
-        int minFreeCpus = 0;
-        int maxFreeCpus = Integer.MAX_VALUE;
-        int minFreeMemInMb = 0;
-        int maxFreeMemInMb = Integer.MAX_VALUE;
+        int maxFreeCpus = 0;
+        int minFreeCpus = Integer.MAX_VALUE;
+        int maxFreeMemInMb = 0;
+        int minFreeMemInMb = Integer.MAX_VALUE;
         for (PeerInfo p : peers.values()) {
             if (p.getNumFreeCpus() > maxFreeCpus) {
                 maxFreeCpus = p.getNumFreeCpus();
