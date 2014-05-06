@@ -68,16 +68,16 @@ public class Snapshot {
         int minFreeMemInMb = 0;
         int maxFreeMemInMb = Integer.MAX_VALUE;
         for (PeerInfo p : peers.values()) {
-            if (p.getNumFreeCpus() < maxFreeCpus) {
+            if (p.getNumFreeCpus() > maxFreeCpus) {
                 maxFreeCpus = p.getNumFreeCpus();
             }
-            if (p.getNumFreeCpus() > minFreeCpus) {
+            if (p.getNumFreeCpus() < minFreeCpus) {
                 minFreeCpus = p.getNumFreeCpus();
             }
-            if (p.getFreeMemInMbs() < maxFreeMemInMb) {
+            if (p.getFreeMemInMbs() > maxFreeMemInMb) {
                 maxFreeMemInMb = p.getFreeMemInMbs();
             }
-            if (p.getFreeMemInMbs() > minFreeMemInMb) {
+            if (p.getFreeMemInMbs() < minFreeMemInMb) {
                 minFreeMemInMb = p.getFreeMemInMbs();
             }
         }
