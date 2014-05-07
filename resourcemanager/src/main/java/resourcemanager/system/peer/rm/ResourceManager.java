@@ -76,6 +76,7 @@ public final class ResourceManager extends ComponentDefinition {
         subscribe(handleTaskFinished, timerPort);
         subscribe(handleResourceAllocationRequest, networkPort);
         subscribe(handleResourceAllocationResponse, networkPort);
+        subscribe(handleAllocate, networkPort);
         subscribe(handleTManSample, tmanPort);
     }
 	
@@ -140,7 +141,9 @@ public final class ResourceManager extends ComponentDefinition {
                 taskQueue.add(event);
            else{
                availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
-               trigger(new TaskFinished(new ScheduleTimeout(event.getTime()), event.getNumCpus(), event.getAmountMemInMb()), timerPort);
+               ScheduleTimeout st = new ScheduleTimeout(event.getTime());
+               st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
+               trigger(st, timerPort);
            }
         }
     };
@@ -190,7 +193,9 @@ public final class ResourceManager extends ComponentDefinition {
                  RequestResources.Allocate first = taskQueue.get(0);
                 if(availableResources.allocate(first.getNumCpus(),first.getAmountMemInMb())){
                     taskQueue.remove(0);
-                    trigger(new TaskFinished(new ScheduleTimeout(first.getTime()), first.getNumCpus(), first.getAmountMemInMb()), timerPort);
+                    ScheduleTimeout st = new ScheduleTimeout(first.getTime());
+                    st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
+                    trigger(st, timerPort);
                 } 
             }
         }
