@@ -72,4 +72,27 @@ public class RequestResources  {
             return destination;
         }
     }
+    
+    public static class Allocate extends Message {
+        private final int numCpus;
+        private final int amountMemInMb;
+        private final int time;
+        
+        public Allocate(Address src, Address dest ,int numCpus, int amountMemInMb, int time) {
+            super(src, dest);
+            this.numCpus = numCpus;
+            this.amountMemInMb = amountMemInMb;
+            this.time = time;
+        }
+
+        public int getNumCpus() {
+            return numCpus;
+        }
+        public int getAmountMemInMb() {
+            return amountMemInMb;
+        }
+        public int getTime() {
+            return time;
+        }
+    }
 }

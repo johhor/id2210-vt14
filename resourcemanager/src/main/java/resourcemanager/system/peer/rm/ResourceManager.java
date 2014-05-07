@@ -23,6 +23,7 @@ import se.sics.kompics.Positive;
 import se.sics.kompics.address.Address;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
+import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timer;
 import se.sics.kompics.web.Web;
 import system.peer.RmPort;
@@ -45,9 +46,9 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<TManSamplePort> tmanPort = positive(TManSamplePort.class);
     ArrayList<Address> neighbours = new ArrayList<Address>();
  
-    ArrayList<RequestResources.Request> requests = new ArrayList<RequestResources.Request>();
+    ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
     //Stores respoce with smallest queue to request sent, stored by Request ID.
-    HashMap<Integer,RequestResources.Response> responses = new HashMap<Integer,RequestResources.Response>(); 
+    HashMap<Integer,RequestHandler> responses = new HashMap<Integer,RequestHandler>(); 
     
     int currId;
     private Address self;
@@ -72,6 +73,7 @@ public final class ResourceManager extends ComponentDefinition {
         subscribe(handleCyclonSample, cyclonSamplePort);
         subscribe(handleRequestResource, indexPort);
         subscribe(handleUpdateTimeout, timerPort);
+        subscribe(handleTaskFinished, timerPort);
         subscribe(handleResourceAllocationRequest, networkPort);
         subscribe(handleResourceAllocationResponse, networkPort);
         subscribe(handleTManSample, tmanPort);
@@ -112,19 +114,37 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
         @Override
         public void handle(RequestResources.Request event) {
-            boolean isAvalible = availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
-            RequestResources.Response response = new RequestResources.Response(self, event.getSource(), isAvalible, requests.size());
-            if(!isAvalible)
-                requests.add(event);
+            boolean isAvalible = availableResources.isAvailable(event.getNumCpus(), event.getAmountMemInMb());
+            RequestResources.Response response = new RequestResources.Response(self, event.getSource(), isAvalible, taskQueue.size(), event.getId());
             trigger(response, networkPort); 
         }
     };
     Handler<RequestResources.Response> handleResourceAllocationResponse = new Handler<RequestResources.Response>() {
         @Override
         public void handle(RequestResources.Response event) {
-            
+            RequestHandler rh = responses.get(event.getId());
+            RequestResources.Response best = rh.isBestResponse(event);
+            if (best != null) {
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+                trigger(allocate, networkPort);
+            }
         }
     };
+    
+    Handler<RequestResources.Allocate> handleAllocate = new Handler<RequestResources.Allocate>() {
+
+        @Override
+        public void handle(RequestResources.Allocate event) {
+            boolean isAvalible = availableResources.isAvailable(event.getNumCpus(), event.getAmountMemInMb());
+           if(!isAvalible)
+                taskQueue.add(event);
+           else{
+               availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
+               trigger(new TaskFinished(new ScheduleTimeout(event.getTime()), event.getNumCpus(), event.getAmountMemInMb()), timerPort);
+           }
+        }
+    };
+    
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
@@ -146,10 +166,10 @@ public final class ResourceManager extends ComponentDefinition {
             // by sending a ResourceRequest
             ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
             int amountOfProbes = tempNeigh.size() > 4 ? 4 : neighbours.size();
+            responses.put(currId, new RequestHandler(amountOfProbes, event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource()));
             for (int i = 0; i < amountOfProbes; i++) {
                 Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
-                RequestResources.Request req = new RequestResources.Request(self, dest,
-                event.getNumCpus(), event.getMemoryInMbs(),currId);
+                RequestResources.Request req = new RequestResources.Request(self, dest, event.getNumCpus(), event.getMemoryInMbs(),currId);
                 trigger(req, networkPort);
             }
             currId++;
@@ -159,6 +179,20 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(TManSample event) {
             // TODO: 
+        }
+    };
+    Handler<TaskFinished> handleTaskFinished = new Handler<TaskFinished>() {
+        @Override
+        public void handle(TaskFinished tf) {
+            availableResources.release(tf.getNumCpus(), tf.getAmountMemInMb());
+            
+            if (!taskQueue.isEmpty()){
+                 RequestResources.Allocate first = taskQueue.get(0);
+                if(availableResources.allocate(first.getNumCpus(),first.getAmountMemInMb())){
+                    taskQueue.remove(0);
+                    trigger(new TaskFinished(new ScheduleTimeout(first.getTime()), first.getNumCpus(), first.getAmountMemInMb()), timerPort);
+                } 
+            }
         }
     };
 
