@@ -44,6 +44,12 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<CyclonSamplePort> cyclonSamplePort = positive(CyclonSamplePort.class);
     Positive<TManSamplePort> tmanPort = positive(TManSamplePort.class);
     ArrayList<Address> neighbours = new ArrayList<Address>();
+ 
+    ArrayList<RequestResources.Request> requests = new ArrayList<RequestResources.Request>();
+    //Stores respoce with smallest queue to request sent, stored by Request ID.
+    HashMap<Integer,RequestResources.Response> responses = new HashMap<Integer,RequestResources.Response>(); 
+    
+    int currId;
     private Address self;
     private RmConfiguration configuration;
     Random random;
@@ -83,11 +89,9 @@ public final class ResourceManager extends ComponentDefinition {
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
             rst.setTimeoutEvent(new UpdateTimeout(rst));
             trigger(rst, timerPort);
-
-
-        }
-    };
-
+            currId = 0;
+    }
+};
 
     Handler<UpdateTimeout> handleUpdateTimeout = new Handler<UpdateTimeout>() {
         @Override
@@ -109,15 +113,16 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(RequestResources.Request event) {
             boolean isAvalible = availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
-            RequestResources.Response responce = new RequestResources.Response(self, event.getSource(), isAvalible);
-
-            trigger(responce, networkPort); 
+            RequestResources.Response response = new RequestResources.Response(self, event.getSource(), isAvalible, requests.size());
+            if(!isAvalible)
+                requests.add(event);
+            trigger(response, networkPort); 
         }
     };
     Handler<RequestResources.Response> handleResourceAllocationResponse = new Handler<RequestResources.Response>() {
         @Override
         public void handle(RequestResources.Response event) {
-             
+            
         }
     };
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
@@ -144,9 +149,10 @@ public final class ResourceManager extends ComponentDefinition {
             for (int i = 0; i < amountOfProbes; i++) {
                 Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
                 RequestResources.Request req = new RequestResources.Request(self, dest,
-                event.getNumCpus(), event.getMemoryInMbs());
+                event.getNumCpus(), event.getMemoryInMbs(),currId);
                 trigger(req, networkPort);
             }
+            currId++;
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {

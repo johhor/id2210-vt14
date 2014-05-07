@@ -15,11 +15,13 @@ public class RequestResources  {
 
         private final int numCpus;
         private final int amountMemInMb;
-
-        public Request(Address source, Address destination, int numCpus, int amountMemInMb) {
+        private final int id;
+        
+        public Request(Address source, Address destination, int numCpus, int amountMemInMb, int id) {
             super(source, destination);
             this.numCpus = numCpus;
             this.amountMemInMb = amountMemInMb;
+            this.id = id;
         }
 
         public int getAmountMemInMb() {
@@ -29,16 +31,34 @@ public class RequestResources  {
         public int getNumCpus() {
             return numCpus;
         }
+        public int getId(){
+            return id;
+        }
 
     }
     
     public static class Response extends Message {
-
+        private final int queueSize;
         private final boolean success;
-        public Response(Address source, Address destination, boolean success) {
+        private  final  int id;
+        public Response(Address source, Address destination, boolean success, int queueSize, int id) {
             super(source, destination);
+            this.queueSize = queueSize;
             this.success = success;
+            this.id = id;
         }
+        
+        public int getQueueSize(){
+            return queueSize;
+        }
+        
+        public boolean getSuccess(){
+            return success;
+        }
+        public int getId(){
+            return id;
+        }
+        
     }
     
     public static class RequestTimeout extends Timeout {
