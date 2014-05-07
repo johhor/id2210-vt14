@@ -105,17 +105,19 @@ public final class ResourceManager extends ComponentDefinition {
         }
     };
 
-
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
         @Override
         public void handle(RequestResources.Request event) {
-            // TODO 
+            boolean isAvalible = availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
+            RequestResources.Response responce = new RequestResources.Response(self, event.getSource(), isAvalible);
+
+            trigger(responce, networkPort); 
         }
     };
     Handler<RequestResources.Response> handleResourceAllocationResponse = new Handler<RequestResources.Response>() {
         @Override
         public void handle(RequestResources.Response event) {
-            // TODO 
+             
         }
     };
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
@@ -137,9 +139,14 @@ public final class ResourceManager extends ComponentDefinition {
             System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // TODO: Ask for resources from neighbours
             // by sending a ResourceRequest
-//            RequestResources.Request req = new RequestResources.Request(self, dest,
-//            event.getNumCpus(), event.getAmountMem());
-//            trigger(req, networkPort);
+            ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
+            int amountOfProbes = tempNeigh.size() > 4 ? 4 : neighbours.size();
+            for (int i = 0; i < amountOfProbes; i++) {
+                Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
+                RequestResources.Request req = new RequestResources.Request(self, dest,
+                event.getNumCpus(), event.getMemoryInMbs());
+                trigger(req, networkPort);
+            }
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
