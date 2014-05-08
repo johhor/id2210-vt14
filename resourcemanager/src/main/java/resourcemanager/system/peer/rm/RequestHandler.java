@@ -39,6 +39,10 @@ public class RequestHandler {
             return bestResponse;
         return null;
     }
+
+    public RequestResources.Response getBestResponse() {
+        return bestResponse;
+    }
     public int getNumCpus() {
         return numCpus;
     }

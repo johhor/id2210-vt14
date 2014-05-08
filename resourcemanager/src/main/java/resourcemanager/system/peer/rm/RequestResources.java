@@ -62,14 +62,14 @@ public class RequestResources  {
     }
     
     public static class RequestTimeout extends Timeout {
-        private final Address destination;
-        RequestTimeout(ScheduleTimeout st, Address destination) {
+        private final int id;
+        RequestTimeout(ScheduleTimeout st, int id) {
             super(st);
-            this.destination = destination;
+            this.id = id;
         }
 
-        public Address getDestination() {
-            return destination;
+        public int getId() {
+            return id;
         }
     }
     

@@ -36,6 +36,9 @@ import tman.system.peer.tman.TManSamplePort;
  * @author jdowling
  */
 public final class ResourceManager extends ComponentDefinition {
+    
+    static final int STANDARD_TIME_OUT_DELAY = 500;
+    static final int MAX_NUM_PROBES = 4;
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceManager.class);
     Positive<RmPort> indexPort = positive(RmPort.class);
@@ -124,10 +127,13 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(RequestResources.Response event) {
             RequestHandler rh = responses.get(event.getId());
+            if (rh == null)
+                return;
             RequestResources.Response best = rh.isBestResponse(event);
             if (best != null) {
                 RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
                 trigger(allocate, networkPort);
+                responses.remove(event.getId());
             }
         }
     };
@@ -167,15 +173,7 @@ public final class ResourceManager extends ComponentDefinition {
             System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // TODO: Ask for resources from neighbours
             // by sending a ResourceRequest
-            ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
-            int amountOfProbes = tempNeigh.size() > 4 ? 4 : neighbours.size();
-            responses.put(currId, new RequestHandler(amountOfProbes, event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource()));
-            for (int i = 0; i < amountOfProbes; i++) {
-                Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
-                RequestResources.Request req = new RequestResources.Request(self, dest, event.getNumCpus(), event.getMemoryInMbs(),currId);
-                trigger(req, networkPort);
-            }
-            currId++;
+            sendRequestsToNeighbours(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource());
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
@@ -200,5 +198,39 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
+    Handler<RequestResources.RequestTimeout> handleRequestTimeout = new Handler<RequestResources.RequestTimeout>() {
 
+        @Override
+        public void handle(RequestResources.RequestTimeout e) {
+            RequestHandler rh = responses.get(e.getId());
+            RequestResources.Response bestResp = rh.getBestResponse();
+            if (bestResp != null) {
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+                trigger(allocate, networkPort);
+            } else {
+                sendRequestsToNeighbours(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+            }
+            responses.remove(e.getId());
+        }
+    };
+    private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource) {
+        ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
+            int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : neighbours.size();
+            if (amountOfProbes == 0) {
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource);
+                trigger(allocate, networkPort);
+            } else {
+            responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource));
+            for (int i = 0; i < amountOfProbes; i++) {
+                Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
+                RequestResources.Request req = new RequestResources.Request(self, dest, numCpus, memoryInMb,currId);
+                trigger(req, networkPort);
+            }
+            ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
+            st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
+            trigger(st, timerPort);
+            currId++;
+            }
+    }
+            
 }
