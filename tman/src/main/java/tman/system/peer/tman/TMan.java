@@ -2,16 +2,17 @@ package tman.system.peer.tman;
 
 import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
-import java.util.ArrayList;
-
 import cyclon.system.peer.cyclon.CyclonSample;
 import cyclon.system.peer.cyclon.CyclonSamplePort;
+import cyclon.system.peer.cyclon.DescriptorBuffer;
+import cyclon.system.peer.cyclon.PeerDescriptor;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
 import se.sics.kompics.Negative;
@@ -22,11 +23,11 @@ import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.ScheduleTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
-
 import tman.simulator.snapshot.Snapshot;
 
 public final class TMan extends ComponentDefinition {
-
+    static final int SAMPLE_SIZE = 10;
+    
     private static final Logger logger = LoggerFactory.getLogger(TMan.class);
 
     Negative<TManSamplePort> tmanPort = negative(TManSamplePort.class);
@@ -39,7 +40,9 @@ public final class TMan extends ComponentDefinition {
     private TManConfiguration tmanConfiguration;
     private Random r;
     private AvailableResources availableResources;
-
+    
+    int currId;
+    
     public class TManSchedule extends Timeout {
 
         public TManSchedule(SchedulePeriodicTimeout request) {
@@ -72,7 +75,7 @@ public final class TMan extends ComponentDefinition {
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
             rst.setTimeoutEvent(new TManSchedule(rst));
             trigger(rst, timerPort);
-
+            currId = 0;
         }
     };
 
@@ -80,32 +83,80 @@ public final class TMan extends ComponentDefinition {
         @Override
         public void handle(TManSchedule event) {
             Snapshot.updateTManPartners(self, tmanPartners);
-
+            Address p = selectPeer();
+            
+            ArrayList<PeerDescriptor> descriptors = new ArrayList<PeerDescriptor>();
+            
+            for(Address a : tmanPartners)
+                descriptors.add(new PeerDescriptor(a));
+            
+            DescriptorBuffer buffer = new DescriptorBuffer(self, descriptors);
+            
+            UUID uuid = UUID.randomUUID();
+            
+            trigger(new ExchangeMsg.Request(uuid,buffer,self,p),networkPort);
             // Publish sample to connected components
             trigger(new TManSample(tmanPartners), tmanPort);
         }
     };
+    
+    private Address selectPeer(){
+        ArrayList<Address> buffer = new ArrayList<Address>(tmanPartners);
+        ArrayList<Address> sample = new ArrayList<Address>();
+        for (int i = 0; i < tmanPartners.size(); i++) {
+                sample.add(getSoftMaxAddress(buffer));
+                buffer.remove(sample.get(i));
+        }
+        return sample.get(r.nextInt(sample.size()/2));
+    }
+    
+    private ArrayList<Address> selectView(ArrayList<Address> buf, ArrayList<Address> view){
+        ArrayList<Address> allNodes = new ArrayList<Address>(buf);
+        ArrayList<Address> newView = new ArrayList<Address>();
+        for (Address a : view) {
+            if(!allNodes.contains(a)){
+                allNodes.add(a);
+            }
+        }
+        int newViewSize = allNodes.size()/2;
+        for (int i = 0; i < newViewSize ; i++) {
+            newView.add(getSoftMaxAddress(allNodes));
+        }
+        
+        return newView;
+    }
+    
+    private void merge(List<Address> buf, List<Address> view){
+            for(Address a : view){
+                if(!buf.contains(a))
+                   buf.add(a);
+            }
+    }
 
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
             List<Address> cyclonPartners = event.getSample();
+            merge(tmanPartners,cyclonPartners);
+            if(!tmanPartners.contains(self))
+                tmanPartners.add(self);
 
-            // merge cyclonPartners into TManPartners
         }
     };
 
     Handler<ExchangeMsg.Request> handleTManPartnersRequest = new Handler<ExchangeMsg.Request>() {
         @Override
         public void handle(ExchangeMsg.Request event) {
-
+            for(PeerDescriptor pd : event.getRandomBuffer().getDescriptors()){
+                
+            }
         }
     };
 
     Handler<ExchangeMsg.Response> handleTManPartnersResponse = new Handler<ExchangeMsg.Response>() {
         @Override
         public void handle(ExchangeMsg.Response event) {
-
+            
         }
     };
 

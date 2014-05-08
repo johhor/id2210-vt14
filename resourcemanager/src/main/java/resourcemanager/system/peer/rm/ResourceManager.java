@@ -110,8 +110,8 @@ public final class ResourceManager extends ComponentDefinition {
                 return;
             }
             Address dest = neighbours.get(random.nextInt(neighbours.size()));
-
-
+            
+            
         }
     };
 
