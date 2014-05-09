@@ -37,7 +37,6 @@ public final class TMan extends ComponentDefinition {
     private long period;
     private Address self;
     private ArrayList<Address> tmanPartners;
-    private ArrayList<Address> randomView;
     private TManConfiguration tmanConfiguration;
     private Random r;
     private AvailableResources availableResources;
@@ -84,20 +83,20 @@ public final class TMan extends ComponentDefinition {
         @Override
         public void handle(TManSchedule event) {
             Snapshot.updateTManPartners(self, tmanPartners);
-            
             Address p = selectPeer();
             
-            ArrayList<Address> buff = new ArrayList<Address>(tmanPartners);
+            ArrayList<PeerDescriptor> descriptors = new ArrayList<PeerDescriptor>();
             
-            merge(buff, randomView);
+            for(Address a : tmanPartners)
+                descriptors.add(new PeerDescriptor(a));
             
-            if(!buff.contains(self))
-                buff.add(self);
+            DescriptorBuffer buffer = new DescriptorBuffer(self, descriptors);
             
-            trigger(new ExchangeMsg.Request(buff,self,p),networkPort);
-//            ScheduleTimeout st = new ScheduleTimeout(period);
-//            st.setTimeoutEvent(new ExchangeMsg.RequestTimeout(st, p));
-//            trigger()
+            UUID uuid = UUID.randomUUID();
+            
+            trigger(new ExchangeMsg.Request(uuid,buffer,self,p),networkPort);
+            // Publish sample to connected components
+            trigger(new TManSample(tmanPartners), tmanPort);
         }
     };
     
@@ -111,15 +110,20 @@ public final class TMan extends ComponentDefinition {
         return sample.get(r.nextInt(sample.size()/2));
     }
     
-    private void selectView(ArrayList<Address> buf){
-        ArrayList<Address> temp = new ArrayList<Address>(buf);
-
-        buf.clear();
-        int newViewSize = temp.size()/2;
-        for (int i = 0; i < newViewSize ; i++) {
-            buf.add(getSoftMaxAddress(temp));
-            temp.remove(buf.get(i));
+    private ArrayList<Address> selectView(ArrayList<Address> buf, ArrayList<Address> view){
+        ArrayList<Address> allNodes = new ArrayList<Address>(buf);
+        ArrayList<Address> newView = new ArrayList<Address>();
+        for (Address a : view) {
+            if(!allNodes.contains(a)){
+                allNodes.add(a);
+            }
         }
+        int newViewSize = allNodes.size()/2;
+        for (int i = 0; i < newViewSize ; i++) {
+            newView.add(getSoftMaxAddress(allNodes));
+        }
+        
+        return newView;
     }
     
     private void merge(List<Address> buf, List<Address> view){
@@ -143,23 +147,16 @@ public final class TMan extends ComponentDefinition {
     Handler<ExchangeMsg.Request> handleTManPartnersRequest = new Handler<ExchangeMsg.Request>() {
         @Override
         public void handle(ExchangeMsg.Request event) {
-            ArrayList<Address> buff = new ArrayList<Address>(tmanPartners);
-            merge(buff, randomView);
-            if(!buff.contains(self))
-                buff.add(self);
-            trigger(new ExchangeMsg.Response(buff, self, event.getSource()), networkPort);
-            merge(tmanPartners, event.getRandomBuffer());
-            selectView(tmanPartners);
+            for(PeerDescriptor pd : event.getRandomBuffer().getDescriptors()){
+                
+            }
         }
     };
 
     Handler<ExchangeMsg.Response> handleTManPartnersResponse = new Handler<ExchangeMsg.Response>() {
         @Override
         public void handle(ExchangeMsg.Response event) {
-            merge(tmanPartners,event.getSelectedBuffer());
-            selectView(tmanPartners);
-            // Publish sample to connected components
-            trigger(new TManSample(tmanPartners), tmanPort);
+            
         }
     };
 

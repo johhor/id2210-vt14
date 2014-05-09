@@ -59,6 +59,8 @@ public final class Peer extends ComponentDefinition {
 		connect(timer, bootstrap.getNegative(Timer.class));
 		connect(timer, tman.getNegative(Timer.class));
 		connect(cyclon.getPositive(CyclonSamplePort.class), 
+                        rm.getNegative(CyclonSamplePort.class));
+		connect(cyclon.getPositive(CyclonSamplePort.class), 
                         tman.getNegative(CyclonSamplePort.class));
 		connect(tman.getPositive(TManSamplePort.class), 
                         rm.getNegative(TManSamplePort.class));
