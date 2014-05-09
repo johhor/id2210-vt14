@@ -26,6 +26,7 @@ import common.peer.AvailableResources;
 import common.peer.PeerDescriptor;
 import cyclon.system.peer.cyclon.*;
 import tman.system.peer.tman.TMan;
+import tman.system.peer.tman.TManInit;
 import tman.system.peer.tman.TManSamplePort;
 
 
@@ -82,6 +83,7 @@ public final class Peer extends ComponentDefinition {
                         availableResources = init.getAvailableResources();
                         
 			trigger(new CyclonInit(cyclonConfiguration, availableResources), cyclon.getControl());
+                        trigger(new TManInit(self, init.getTmanConfiguration(), availableResources), tman.getControl());
 			trigger(new BootstrapClientInit(self, init.getBootstrapConfiguration()), bootstrap.getControl());
 			BootstrapRequest request = new BootstrapRequest("Cyclon", bootstrapRequestPeerCount);
 			trigger(request, bootstrap.getPositive(P2pBootstrap.class));

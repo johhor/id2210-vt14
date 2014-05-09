@@ -37,7 +37,7 @@ public final class TMan extends ComponentDefinition {
     private long period;
     private Address self;
     private ArrayList<Address> tmanPartners;
-    private ArrayList<Address> randomView;
+    private ArrayList<Address> randomView = new ArrayList<Address>();
     private TManConfiguration tmanConfiguration;
     private Random r;
     private AvailableResources availableResources;
@@ -85,6 +85,7 @@ public final class TMan extends ComponentDefinition {
         public void handle(TManSchedule event) {
             Snapshot.updateTManPartners(self, tmanPartners);
             
+            if (!tmanPartners.isEmpty()) {
             Address p = selectPeer();
             
             ArrayList<Address> buff = new ArrayList<Address>(tmanPartners);
@@ -95,6 +96,7 @@ public final class TMan extends ComponentDefinition {
                 buff.add(self);
             
             trigger(new ExchangeMsg.Request(buff,self,p),networkPort);
+            }
 //            ScheduleTimeout st = new ScheduleTimeout(period);
 //            st.setTimeoutEvent(new ExchangeMsg.RequestTimeout(st, p));
 //            trigger()
@@ -108,7 +110,7 @@ public final class TMan extends ComponentDefinition {
                 sample.add(getSoftMaxAddress(buffer));
                 buffer.remove(sample.get(i));
         }
-        return sample.get(r.nextInt(sample.size()/2));
+        return sample.get(r.nextInt((int)Math.ceil(sample.size()/2.0)));
     }
     
     private void selectView(ArrayList<Address> buf){
@@ -132,11 +134,10 @@ public final class TMan extends ComponentDefinition {
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
-            List<Address> cyclonPartners = event.getSample();
-            merge(tmanPartners,cyclonPartners);
-            if(!tmanPartners.contains(self))
-                tmanPartners.add(self);
-
+            if (tmanPartners.isEmpty()) {
+                tmanPartners = event.getSample();
+            }
+            randomView = event.getSample();
         }
     };
 
