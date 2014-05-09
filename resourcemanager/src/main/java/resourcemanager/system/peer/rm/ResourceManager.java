@@ -45,7 +45,6 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<Network> networkPort = positive(Network.class);
     Positive<Timer> timerPort = positive(Timer.class);
     Negative<Web> webPort = negative(Web.class);
-    Positive<CyclonSamplePort> cyclonSamplePort = positive(CyclonSamplePort.class);
     Positive<TManSamplePort> tmanPort = positive(TManSamplePort.class);
     ArrayList<Address> neighbours = new ArrayList<Address>();
  
@@ -73,7 +72,6 @@ public final class ResourceManager extends ComponentDefinition {
     public ResourceManager() {
 
         subscribe(handleInit, control);
-        subscribe(handleCyclonSample, cyclonSamplePort);
         subscribe(handleRequestResource, indexPort);
         subscribe(handleUpdateTimeout, timerPort);
         subscribe(handleTaskFinished, timerPort);
@@ -154,17 +152,6 @@ public final class ResourceManager extends ComponentDefinition {
         }
     };
     
-    Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
-        @Override
-        public void handle(CyclonSample event) {
-            System.out.println("Received samples: " + event.getSample().size());
-            
-            // receive a new list of neighbours
-            neighbours.clear();
-            neighbours.addAll(event.getSample());
-
-        }
-    };
 	
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
@@ -179,7 +166,11 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
         @Override
         public void handle(TManSample event) {
-            // TODO: 
+            System.out.println("Received samples: " + event.getSample().size());
+            
+            // receive a new list of neighbours
+            neighbours.clear();
+            neighbours.addAll(event.getSample());
         }
     };
     Handler<TaskFinished> handleTaskFinished = new Handler<TaskFinished>() {
