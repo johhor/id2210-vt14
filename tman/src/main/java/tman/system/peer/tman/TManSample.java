@@ -1,5 +1,6 @@
 package tman.system.peer.tman;
 
+import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
 
 
@@ -8,10 +9,10 @@ import se.sics.kompics.address.Address;
 
 
 public class TManSample extends Event {
-	ArrayList<GradientPeerDescriptor> partners = new ArrayList<GradientPeerDescriptor>();
+	ArrayList<PeerDescriptor> partners = new ArrayList<PeerDescriptor>();
 
 
-	public TManSample(ArrayList<GradientPeerDescriptor> partners) {
+	public TManSample(ArrayList<PeerDescriptor> partners) {
 		this.partners = partners;
 	}
         
@@ -19,7 +20,7 @@ public class TManSample extends Event {
 	}
 
 
-	public ArrayList<GradientPeerDescriptor> getSample() {
+	public ArrayList<PeerDescriptor> getSample() {
 		return this.partners;
 	}
 }

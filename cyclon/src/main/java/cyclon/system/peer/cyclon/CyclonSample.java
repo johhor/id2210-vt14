@@ -5,17 +5,17 @@ import se.sics.kompics.Event;
 import se.sics.kompics.address.Address;
 
 public class CyclonSample extends Event {
-	ArrayList<GradientPeerDescriptor> nodes = new ArrayList<GradientPeerDescriptor>();
+	ArrayList<PeerDescriptor> nodes = new ArrayList<PeerDescriptor>();
 
 
-	public CyclonSample(ArrayList<GradientPeerDescriptor> nodes) {
+	public CyclonSample(ArrayList<PeerDescriptor> nodes) {
 		this.nodes = nodes;
 	}
         
 	public CyclonSample() {
 	}
 
-	public ArrayList<GradientPeerDescriptor> getSample() {
+	public ArrayList<PeerDescriptor> getSample() {
 		return this.nodes;
 	}
 }

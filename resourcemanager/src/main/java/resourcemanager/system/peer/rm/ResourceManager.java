@@ -3,8 +3,9 @@ package resourcemanager.system.peer.rm;
 import common.configuration.RmConfiguration;
 import common.peer.AvailableResources;
 import common.simulation.RequestResource;
+import common.peer.UpdateAvailableResources;
 import cyclon.system.peer.cyclon.CyclonSample;
-import cyclon.system.peer.cyclon.CyclonSamplePort;
+import cyclon.system.peer.cyclon.CyclonPort;
 import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +47,8 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<Timer> timerPort = positive(Timer.class);
     Negative<Web> webPort = negative(Web.class);
     Positive<TManSamplePort> tmanPort = positive(TManSamplePort.class);
-    ArrayList<Address> neighbours = new ArrayList<Address>();
+    Positive<CyclonPort> cyclonPort = positive(CyclonPort.class);
+    ArrayList<PeerDescriptor> neighbours = new ArrayList<PeerDescriptor>();
 
     ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
     //Stores respoce with smallest queue to request sent, stored by Request ID.
@@ -107,7 +109,7 @@ public final class ResourceManager extends ComponentDefinition {
             if (neighbours.isEmpty()) {
                 return;
             }
-            Address dest = neighbours.get(random.nextInt(neighbours.size()));
+            PeerDescriptor dest = neighbours.get(random.nextInt(neighbours.size()));
 
         }
     };
@@ -148,6 +150,9 @@ public final class ResourceManager extends ComponentDefinition {
                 ScheduleTimeout st = new ScheduleTimeout(event.getTime());
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
                 trigger(st, timerPort);
+                UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
+                trigger(uar, cyclonPort);
+                trigger(uar, tmanPort);
             }
         }
     };
@@ -206,7 +211,7 @@ public final class ResourceManager extends ComponentDefinition {
     };
 
     private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource) {
-        ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
+        ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(neighbours);
         int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : neighbours.size();
         if (amountOfProbes == 0) {
             RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource);
@@ -214,8 +219,8 @@ public final class ResourceManager extends ComponentDefinition {
         } else {
             responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource));
             for (int i = 0; i < amountOfProbes; i++) {
-                Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
-                RequestResources.Request req = new RequestResources.Request(self, dest, numCpus, memoryInMb, currId);
+                PeerDescriptor dest = tempNeigh.remove(random.nextInt(neighbours.size()));
+                RequestResources.Request req = new RequestResources.Request(self, dest.getAddress(), numCpus, memoryInMb, currId);
                 trigger(req, networkPort);
             }
             ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);

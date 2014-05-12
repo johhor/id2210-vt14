@@ -3,6 +3,7 @@ package tman.system.peer.tman;
 import java.util.UUID;
 
 import cyclon.system.peer.cyclon.DescriptorBuffer;
+import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
 import se.sics.kompics.address.Address;
 import se.sics.kompics.network.Message;
@@ -14,16 +15,16 @@ public class ExchangeMsg {
     public static class Request extends Message {
 
         private static final long serialVersionUID = 8493601671018888143L;
-        private final ArrayList<GradientPeerDescriptor> randomBuffer;
+        private final ArrayList<PeerDescriptor> randomBuffer;
 
 
-        public Request(ArrayList<GradientPeerDescriptor> randomBuffer, Address source, 
+        public Request(ArrayList<PeerDescriptor> randomBuffer, Address source, 
                 Address destination) {
             super(source, destination);
             this.randomBuffer = randomBuffer;
         }
 
-        public ArrayList<GradientPeerDescriptor> getRandomBuffer() {
+        public ArrayList<PeerDescriptor> getRandomBuffer() {
             return randomBuffer;
         }
 
@@ -36,10 +37,10 @@ public class ExchangeMsg {
     public static class Response extends Message {
 
         private static final long serialVersionUID = -5022051054665787770L;
-        private final ArrayList<GradientPeerDescriptor> selectedBuffer;
+        private final ArrayList<PeerDescriptor> selectedBuffer;
         //private final DescriptorBuffer selectedBuffer;
 
-        public Response(ArrayList<GradientPeerDescriptor> selectedBuffer, Address source, Address destination) {
+        public Response(ArrayList<PeerDescriptor> selectedBuffer, Address source, Address destination) {
             super(source, destination);
             this.selectedBuffer = selectedBuffer;
         }
@@ -51,7 +52,7 @@ public class ExchangeMsg {
 //        }
 
 
-        public ArrayList<GradientPeerDescriptor> getSelectedBuffer() {
+        public ArrayList<PeerDescriptor> getSelectedBuffer() {
             return selectedBuffer;
         }
 

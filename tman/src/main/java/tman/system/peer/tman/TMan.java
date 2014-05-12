@@ -2,8 +2,10 @@ package tman.system.peer.tman;
 
 import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
+import common.peer.UpdateAvailableResources;
 import cyclon.system.peer.cyclon.CyclonSample;
 import cyclon.system.peer.cyclon.CyclonSamplePort;
+import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,13 +31,15 @@ public final class TMan extends ComponentDefinition {
     private static final Logger logger = LoggerFactory.getLogger(TMan.class);
 
     Negative<TManSamplePort> tmanPort = negative(TManSamplePort.class);
+    //Positive<TManSamplePort> tmanUARPort = positive(TManSamplePort.class);
     Positive<CyclonSamplePort> cyclonSamplePort = positive(CyclonSamplePort.class);
     Positive<Network> networkPort = positive(Network.class);
     Positive<Timer> timerPort = positive(Timer.class);
+    
     private long period;
     private Address self;
-    private ArrayList<GradientPeerDescriptor> tmanPartners;
-    private ArrayList<GradientPeerDescriptor> randomView = new ArrayList<GradientPeerDescriptor>();
+    private ArrayList<PeerDescriptor> tmanPartners;
+    private ArrayList<PeerDescriptor> randomView = new ArrayList<PeerDescriptor>();
     private TManConfiguration tmanConfiguration;
     private Random r;
     private AvailableResources availableResources;
@@ -55,13 +59,14 @@ public final class TMan extends ComponentDefinition {
     }
 
     public TMan() {
-        tmanPartners = new ArrayList<GradientPeerDescriptor>();
+        tmanPartners = new ArrayList<PeerDescriptor>();
 
         subscribe(handleInit, control);
         subscribe(handleRound, timerPort);
         subscribe(handleCyclonSample, cyclonSamplePort);
         subscribe(handleTManPartnersResponse, networkPort);
         subscribe(handleTManPartnersRequest, networkPort);
+        subscribe(handleUpdateAvailableResources, tmanUARPort);
     }
 
     Handler<TManInit> handleInit = new Handler<TManInit>() {
@@ -79,8 +84,8 @@ public final class TMan extends ComponentDefinition {
         }
     };
     /*Creates a new Gradient descriptor with age 0*/
-    private GradientPeerDescriptor getSelf(){
-        return new GradientPeerDescriptor(self, availableResources);
+    private PeerDescriptor getSelf(){
+        return new PeerDescriptor(self, availableResources);
     }
     
     /*When we get a time out from our timer containing ar TManSchedule is equals
@@ -91,7 +96,7 @@ public final class TMan extends ComponentDefinition {
         @Override
         public void handle(TManSchedule event) {
             ArrayList<Address> tmanPartnersForSnapshot = new ArrayList<Address>();
-            for (GradientPeerDescriptor gpd : tmanPartners)
+            for (PeerDescriptor gpd : tmanPartners)
                 tmanPartnersForSnapshot.add(gpd.getAddress());
             
             Snapshot.updateTManPartners(self, tmanPartnersForSnapshot);
@@ -99,10 +104,10 @@ public final class TMan extends ComponentDefinition {
             if (!tmanPartners.isEmpty()) {
             Address p = selectPeer().getAddress();
             
-            ArrayList<GradientPeerDescriptor> buff = new ArrayList<GradientPeerDescriptor>(tmanPartners);
+            ArrayList<PeerDescriptor> buff = new ArrayList<PeerDescriptor>(tmanPartners);
             
             merge(buff, randomView);
-            GradientPeerDescriptor selfGPD = getSelf();
+            PeerDescriptor selfGPD = getSelf();
             if(!buff.contains(selfGPD))
                 buff.add(selfGPD);
             
@@ -114,9 +119,9 @@ public final class TMan extends ComponentDefinition {
         }
     };
     /*Selects a random peer from the the top 50% of peers in the current view*/
-    private GradientPeerDescriptor selectPeer(){
-        ArrayList<GradientPeerDescriptor> buffer = new ArrayList<GradientPeerDescriptor>(tmanPartners);
-        ArrayList<GradientPeerDescriptor> sample = new ArrayList<GradientPeerDescriptor>();
+    private PeerDescriptor selectPeer(){
+        ArrayList<PeerDescriptor> buffer = new ArrayList<PeerDescriptor>(tmanPartners);
+        ArrayList<PeerDescriptor> sample = new ArrayList<PeerDescriptor>();
         for (int i = 0; i < tmanPartners.size(); i++) {
                 sample.add(getSoftMaxAddress(buffer));
                 buffer.remove(sample.get(i));
@@ -125,8 +130,8 @@ public final class TMan extends ComponentDefinition {
     }
     /* Selects a view from a buffer, taking 1/2 of the addresses using the 
     getSoftMax function */
-    private void selectView(ArrayList<GradientPeerDescriptor> buf){
-        ArrayList<GradientPeerDescriptor> temp = new ArrayList<GradientPeerDescriptor>(buf);
+    private void selectView(ArrayList<PeerDescriptor> buf){
+        ArrayList<PeerDescriptor> temp = new ArrayList<PeerDescriptor>(buf);
 
         buf.clear();
         int newViewSize = temp.size()/2;
@@ -136,8 +141,8 @@ public final class TMan extends ComponentDefinition {
         }
     }
     /*Merges two lists of addresses into the first argument*/
-    private void merge(List<Address> buf, List<Address> view){
-            for(Address a : view){
+    private void merge(List<PeerDescriptor> buf, List<PeerDescriptor> view){
+            for(PeerDescriptor a : view){
                 if(!buf.contains(a))
                    buf.add(a);
             }
@@ -176,9 +181,9 @@ public final class TMan extends ComponentDefinition {
     Handler<ExchangeMsg.Request> handleTManPartnersRequest = new Handler<ExchangeMsg.Request>() {
         @Override
         public void handle(ExchangeMsg.Request event) {
-            ArrayList<GradientPeerDescriptor> buff = new ArrayList<GradientPeerDescriptor>(tmanPartners);
+            ArrayList<PeerDescriptor> buff = new ArrayList<PeerDescriptor>(tmanPartners);
             merge(buff, randomView);
-            GradientPeerDescriptor ownGPD = getSelf();
+            PeerDescriptor ownGPD = getSelf();
             buff.remove(ownGPD);
             buff.add(ownGPD);
             trigger(new ExchangeMsg.Response(buff, self, event.getSource()), networkPort);
@@ -196,6 +201,14 @@ public final class TMan extends ComponentDefinition {
             trigger(new TManSample(tmanPartners), tmanPort);
         }
     };
+    
+    Handler<UpdateAvailableResources> handleUpdateAvailableResources = new Handler<UpdateAvailableResources>() {
+
+            @Override
+            public void handle(UpdateAvailableResources e) {
+                availableResources = e.getAvailableResources();
+            }
+        };
 
     /** TODO - if you call this method with a list of entries, it will
      return a single node, weighted towards the 'best' node (as defined by
@@ -205,7 +218,7 @@ public final class TMan extends ComponentDefinition {
      A temperature of '0.0' will throw a divide by zero exception :)
      Reference:
      http://webdocs.cs.ualberta.ca/~sutton/book/2/node4.html**/
-    public GradientPeerDescriptor getSoftMaxAddress(List<GradientPeerDescriptor> entries) {
+    public PeerDescriptor getSoftMaxAddress(List<PeerDescriptor> entries) {
         //Collections.sort(entries, new ComparatorById(self));
 
         double rnd = r.nextDouble();

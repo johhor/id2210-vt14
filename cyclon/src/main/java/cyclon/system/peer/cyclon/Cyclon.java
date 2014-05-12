@@ -2,6 +2,7 @@ package cyclon.system.peer.cyclon;
 
 import common.configuration.CyclonConfiguration;
 import common.peer.AvailableResources;
+import common.peer.UpdateAvailableResources;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -22,6 +23,7 @@ import se.sics.kompics.address.Address;
 public final class Cyclon extends ComponentDefinition {
 
 	Negative<CyclonPort> cyclonPort = negative(CyclonPort.class);
+        //Positive<CyclonPort> cyclonUARPort = positive(CyclonPort.class);
 	Negative<CyclonPartnersPort> partnersPort = negative(CyclonPartnersPort.class);
 	Negative<CyclonSamplePort> samplePort = negative(CyclonSamplePort.class);
 	Positive<Network> networkPort = positive(Network.class);
@@ -48,6 +50,7 @@ public final class Cyclon extends ComponentDefinition {
 		subscribe(handleShuffleRequest, networkPort);
 		subscribe(handleShuffleResponse, networkPort);
 		subscribe(handlePartnersRequest, partnersPort);
+                subscribe(handleUpdateAvailableResources, cyclonUARPort);
 	}
 
 	
@@ -102,7 +105,7 @@ public final class Cyclon extends ComponentDefinition {
 	private void initiateShuffle(int shuffleSize, Address randomPeer) {
 		// send the random view to a random peer
 		ArrayList<PeerDescriptor> randomDescriptors = cache.selectToSendAtActive(shuffleSize - 1, randomPeer);
-		randomDescriptors.add(new PeerDescriptor(self));
+		randomDescriptors.add(new PeerDescriptor(self, availableResources));
 		DescriptorBuffer randomBuffer = new DescriptorBuffer(self, randomDescriptors);
 		
 		ScheduleTimeout rst = new ScheduleTimeout(shuffleTimeout);
@@ -189,13 +192,21 @@ public final class Cyclon extends ComponentDefinition {
 			trigger(response, partnersPort);
 		}
 	};
+        
+        Handler<UpdateAvailableResources> handleUpdateAvailableResources = new Handler<UpdateAvailableResources>() {
+
+            @Override
+            public void handle(UpdateAvailableResources e) {
+                availableResources = e.getAvailableResources();
+            }
+        };
 	
 
-	private ArrayList<Address> getPartners() {
+	private ArrayList<PeerDescriptor> getPartners() {
 		ArrayList<PeerDescriptor> partnersDescriptors = cache.getAll();
-		ArrayList<Address> partners = new ArrayList<Address>();
+		ArrayList<PeerDescriptor> partners = new ArrayList<PeerDescriptor>();
 		for (PeerDescriptor desc : partnersDescriptors)
-			partners.add(desc.getAddress());
+			partners.add(desc);
 		
 		return partners;
 	}
