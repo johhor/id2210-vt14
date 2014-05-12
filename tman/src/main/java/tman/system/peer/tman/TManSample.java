@@ -8,10 +8,10 @@ import se.sics.kompics.address.Address;
 
 
 public class TManSample extends Event {
-	ArrayList<Address> partners = new ArrayList<Address>();
+	ArrayList<GradientPeerDescriptor> partners = new ArrayList<GradientPeerDescriptor>();
 
 
-	public TManSample(ArrayList<Address> partners) {
+	public TManSample(ArrayList<GradientPeerDescriptor> partners) {
 		this.partners = partners;
 	}
         
@@ -19,7 +19,7 @@ public class TManSample extends Event {
 	}
 
 
-	public ArrayList<Address> getSample() {
+	public ArrayList<GradientPeerDescriptor> getSample() {
 		return this.partners;
 	}
 }

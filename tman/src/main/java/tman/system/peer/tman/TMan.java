@@ -4,8 +4,6 @@ import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
 import cyclon.system.peer.cyclon.CyclonSample;
 import cyclon.system.peer.cyclon.CyclonSamplePort;
-import cyclon.system.peer.cyclon.DescriptorBuffer;
-import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,13 +34,14 @@ public final class TMan extends ComponentDefinition {
     Positive<Timer> timerPort = positive(Timer.class);
     private long period;
     private Address self;
-    private ArrayList<Address> tmanPartners;
-    private ArrayList<Address> randomView = new ArrayList<Address>();
+    private ArrayList<GradientPeerDescriptor> tmanPartners;
+    private ArrayList<GradientPeerDescriptor> randomView = new ArrayList<GradientPeerDescriptor>();
     private TManConfiguration tmanConfiguration;
     private Random r;
     private AvailableResources availableResources;
     
-    int currId;
+    private int randomViewUpdateCounter;
+    private int currId;
     
     public class TManSchedule extends Timeout {
 
@@ -56,7 +55,7 @@ public final class TMan extends ComponentDefinition {
     }
 
     public TMan() {
-        tmanPartners = new ArrayList<Address>();
+        tmanPartners = new ArrayList<GradientPeerDescriptor>();
 
         subscribe(handleInit, control);
         subscribe(handleRound, timerPort);
@@ -74,26 +73,38 @@ public final class TMan extends ComponentDefinition {
             r = new Random(tmanConfiguration.getSeed());
             availableResources = init.getAvailableResources();
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
-            rst.setTimeoutEvent(new TManSchedule(rst));
+                rst.setTimeoutEvent(new TManSchedule(rst));
             trigger(rst, timerPort);
             currId = 0;
         }
     };
-
+    /*Creates a new Gradient descriptor with age 0*/
+    private GradientPeerDescriptor getSelf(){
+        return new GradientPeerDescriptor(self, availableResources);
+    }
+    
+    /*When we get a time out from our timer containing ar TManSchedule is equals
+    to doing this each delta time unit. Each delta we choose a random peer in 
+    our view and requests to exchange our view with it.
+    */
     Handler<TManSchedule> handleRound = new Handler<TManSchedule>() {
         @Override
         public void handle(TManSchedule event) {
-            Snapshot.updateTManPartners(self, tmanPartners);
+            ArrayList<Address> tmanPartnersForSnapshot = new ArrayList<Address>();
+            for (GradientPeerDescriptor gpd : tmanPartners)
+                tmanPartnersForSnapshot.add(gpd.getAddress());
+            
+            Snapshot.updateTManPartners(self, tmanPartnersForSnapshot);
             
             if (!tmanPartners.isEmpty()) {
-            Address p = selectPeer();
+            Address p = selectPeer().getAddress();
             
-            ArrayList<Address> buff = new ArrayList<Address>(tmanPartners);
+            ArrayList<GradientPeerDescriptor> buff = new ArrayList<GradientPeerDescriptor>(tmanPartners);
             
             merge(buff, randomView);
-            
-            if(!buff.contains(self))
-                buff.add(self);
+            GradientPeerDescriptor selfGPD = getSelf();
+            if(!buff.contains(selfGPD))
+                buff.add(selfGPD);
             
             trigger(new ExchangeMsg.Request(buff,self,p),networkPort);
             }
@@ -102,19 +113,20 @@ public final class TMan extends ComponentDefinition {
 //            trigger()
         }
     };
-    
-    private Address selectPeer(){
-        ArrayList<Address> buffer = new ArrayList<Address>(tmanPartners);
-        ArrayList<Address> sample = new ArrayList<Address>();
+    /*Selects a random peer from the the top 50% of peers in the current view*/
+    private GradientPeerDescriptor selectPeer(){
+        ArrayList<GradientPeerDescriptor> buffer = new ArrayList<GradientPeerDescriptor>(tmanPartners);
+        ArrayList<GradientPeerDescriptor> sample = new ArrayList<GradientPeerDescriptor>();
         for (int i = 0; i < tmanPartners.size(); i++) {
                 sample.add(getSoftMaxAddress(buffer));
                 buffer.remove(sample.get(i));
         }
         return sample.get(r.nextInt((int)Math.ceil(sample.size()/2.0)));
     }
-    
-    private void selectView(ArrayList<Address> buf){
-        ArrayList<Address> temp = new ArrayList<Address>(buf);
+    /* Selects a view from a buffer, taking 1/2 of the addresses using the 
+    getSoftMax function */
+    private void selectView(ArrayList<GradientPeerDescriptor> buf){
+        ArrayList<GradientPeerDescriptor> temp = new ArrayList<GradientPeerDescriptor>(buf);
 
         buf.clear();
         int newViewSize = temp.size()/2;
@@ -123,31 +135,52 @@ public final class TMan extends ComponentDefinition {
             temp.remove(buf.get(i));
         }
     }
-    
+    /*Merges two lists of addresses into the first argument*/
     private void merge(List<Address> buf, List<Address> view){
             for(Address a : view){
                 if(!buf.contains(a))
                    buf.add(a);
             }
     }
-
+    
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
+            randomViewUpdateCounter = 0;
             if (tmanPartners.isEmpty()) {
                 tmanPartners = event.getSample();
             }
             randomView = event.getSample();
         }
     };
+  /*  
+    Handler<UpdateCycloneSampleResources.Request> handleUpdateCycloneSampleResourcesRequest = new Handler<UpdateCycloneSampleResources.Request>(){
 
+        @Override
+        public void handle(UpdateCycloneSampleResources.Request e) {
+        }
+    };
+
+            
+    Handler<UpdateCycloneSampleResources.Response> handleUpdateCycloneSampleResourcesResponce = new Handler<UpdateCycloneSampleResources.Response>() {
+ 
+        @Override
+        public void handle(UpdateCycloneSampleResources.Response e) {
+            GradientPeerDescriptor sampleGPD = new GradientPeerDescriptor(e.getSource(), e.getAvailableResources());
+            randomView.remove(sampleGPD);
+            randomView.add(sampleGPD);
+        }
+    };
+*/
+            
     Handler<ExchangeMsg.Request> handleTManPartnersRequest = new Handler<ExchangeMsg.Request>() {
         @Override
         public void handle(ExchangeMsg.Request event) {
-            ArrayList<Address> buff = new ArrayList<Address>(tmanPartners);
+            ArrayList<GradientPeerDescriptor> buff = new ArrayList<GradientPeerDescriptor>(tmanPartners);
             merge(buff, randomView);
-            if(!buff.contains(self))
-                buff.add(self);
+            GradientPeerDescriptor ownGPD = getSelf();
+            buff.remove(ownGPD);
+            buff.add(ownGPD);
             trigger(new ExchangeMsg.Response(buff, self, event.getSource()), networkPort);
             merge(tmanPartners, event.getRandomBuffer());
             selectView(tmanPartners);
@@ -164,25 +197,27 @@ public final class TMan extends ComponentDefinition {
         }
     };
 
-    // TODO - if you call this method with a list of entries, it will
-    // return a single node, weighted towards the 'best' node (as defined by
-    // ComparatorById) with the temperature controlling the weighting.
-    // A temperature of '1.0' will be greedy and always return the best node.
-    // A temperature of '0.000001' will return a random node.
-    // A temperature of '0.0' will throw a divide by zero exception :)
-    // Reference:
-    // http://webdocs.cs.ualberta.ca/~sutton/book/2/node4.html
-    public Address getSoftMaxAddress(List<Address> entries) {
-        Collections.sort(entries, new ComparatorById(self));
+    /** TODO - if you call this method with a list of entries, it will
+     return a single node, weighted towards the 'best' node (as defined by
+     ComparatorById) with the temperature controlling the weighting.
+     A temperature of '1.0' will be greedy and always return the best node.
+     A temperature of '0.000001' will return a random node.
+     A temperature of '0.0' will throw a divide by zero exception :)
+     Reference:
+     http://webdocs.cs.ualberta.ca/~sutton/book/2/node4.html**/
+    public GradientPeerDescriptor getSoftMaxAddress(List<GradientPeerDescriptor> entries) {
+        //Collections.sort(entries, new ComparatorById(self));
 
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
-        int j = entries.size() + 1;
+        //int j = entries.size() + 1;
+        /*Initializes the valueslist*/
         for (int i = 0; i < entries.size(); i++) {
             // get inverse of values - lowest have highest value.
-            double val = j;
-            j--;
+//            double val = j;
+            double val = 0.0000000000000000000000000000000000000000000;
+//            j--;
             values[i] = Math.exp(val / tmanConfiguration.getTemperature());
             total += values[i];
         }

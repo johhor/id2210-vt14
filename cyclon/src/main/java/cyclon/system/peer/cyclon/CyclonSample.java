@@ -1,25 +1,21 @@
 package cyclon.system.peer.cyclon;
 
 import java.util.ArrayList;
-
-
 import se.sics.kompics.Event;
 import se.sics.kompics.address.Address;
 
-
 public class CyclonSample extends Event {
-	ArrayList<Address> nodes = new ArrayList<Address>();
+	ArrayList<GradientPeerDescriptor> nodes = new ArrayList<GradientPeerDescriptor>();
 
 
-	public CyclonSample(ArrayList<Address> nodes) {
+	public CyclonSample(ArrayList<GradientPeerDescriptor> nodes) {
 		this.nodes = nodes;
 	}
         
 	public CyclonSample() {
 	}
 
-
-	public ArrayList<Address> getSample() {
+	public ArrayList<GradientPeerDescriptor> getSample() {
 		return this.nodes;
 	}
 }

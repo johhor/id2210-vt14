@@ -14,16 +14,16 @@ public class ExchangeMsg {
     public static class Request extends Message {
 
         private static final long serialVersionUID = 8493601671018888143L;
-        private final ArrayList<Address> randomBuffer;
+        private final ArrayList<GradientPeerDescriptor> randomBuffer;
 
 
-        public Request(ArrayList<Address> randomBuffer, Address source, 
+        public Request(ArrayList<GradientPeerDescriptor> randomBuffer, Address source, 
                 Address destination) {
             super(source, destination);
             this.randomBuffer = randomBuffer;
         }
 
-        public ArrayList<Address> getRandomBuffer() {
+        public ArrayList<GradientPeerDescriptor> getRandomBuffer() {
             return randomBuffer;
         }
 
@@ -36,10 +36,10 @@ public class ExchangeMsg {
     public static class Response extends Message {
 
         private static final long serialVersionUID = -5022051054665787770L;
-        private final ArrayList<Address> selectedBuffer;
+        private final ArrayList<GradientPeerDescriptor> selectedBuffer;
         //private final DescriptorBuffer selectedBuffer;
 
-        public Response(ArrayList<Address> selectedBuffer, Address source, Address destination) {
+        public Response(ArrayList<GradientPeerDescriptor> selectedBuffer, Address source, Address destination) {
             super(source, destination);
             this.selectedBuffer = selectedBuffer;
         }
@@ -51,7 +51,7 @@ public class ExchangeMsg {
 //        }
 
 
-        public ArrayList<Address> getSelectedBuffer() {
+        public ArrayList<GradientPeerDescriptor> getSelectedBuffer() {
             return selectedBuffer;
         }
 
