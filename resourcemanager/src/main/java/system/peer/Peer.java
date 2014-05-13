@@ -28,6 +28,7 @@ import cyclon.system.peer.cyclon.*;
 import tman.system.peer.tman.TMan;
 import tman.system.peer.tman.TManInit;
 import tman.system.peer.tman.TManSamplePort;
+import tman.system.peer.tman.TManUpdateAvailableResourcesPort;
 
 
 public final class Peer extends ComponentDefinition {
@@ -63,8 +64,11 @@ public final class Peer extends ComponentDefinition {
                         tman.getNegative(CyclonSamplePort.class));
 		connect(tman.getPositive(TManSamplePort.class), 
                         rm.getNegative(TManSamplePort.class));
-
                 connect(rmPort, rm.getNegative(RmPort.class));
+                connect(tman.getPositive(TManUpdateAvailableResourcesPort.class), 
+                        rm.getNegative(TManUpdateAvailableResourcesPort.class));
+                connect(cyclon.getPositive(CyclonUpdateAvailableResourcesPort.class), 
+                        rm.getNegative(CyclonUpdateAvailableResourcesPort.class));
 		
 		subscribe(handleInit, control);
 		subscribe(handleJoinCompleted, cyclon.getPositive(CyclonPort.class));

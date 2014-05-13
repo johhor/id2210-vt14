@@ -23,7 +23,7 @@ import se.sics.kompics.address.Address;
 public final class Cyclon extends ComponentDefinition {
 
 	Negative<CyclonPort> cyclonPort = negative(CyclonPort.class);
-        //Positive<CyclonPort> cyclonUARPort = positive(CyclonPort.class);
+        Negative<CyclonUpdateAvailableResourcesPort> cyclonUARPort = negative(CyclonUpdateAvailableResourcesPort.class);
 	Negative<CyclonPartnersPort> partnersPort = negative(CyclonPartnersPort.class);
 	Negative<CyclonSamplePort> samplePort = negative(CyclonSamplePort.class);
 	Positive<Network> networkPort = positive(Network.class);

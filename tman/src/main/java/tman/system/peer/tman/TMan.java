@@ -31,7 +31,7 @@ public final class TMan extends ComponentDefinition {
     private static final Logger logger = LoggerFactory.getLogger(TMan.class);
 
     Negative<TManSamplePort> tmanPort = negative(TManSamplePort.class);
-    //Positive<TManSamplePort> tmanUARPort = positive(TManSamplePort.class);
+    Negative<TManUpdateAvailableResourcesPort> tmanUARPort = negative(TManUpdateAvailableResourcesPort.class);
     Positive<CyclonSamplePort> cyclonSamplePort = positive(CyclonSamplePort.class);
     Positive<Network> networkPort = positive(Network.class);
     Positive<Timer> timerPort = positive(Timer.class);

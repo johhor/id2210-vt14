@@ -30,6 +30,8 @@ import se.sics.kompics.web.Web;
 import system.peer.RmPort;
 import tman.system.peer.tman.TManSample;
 import tman.system.peer.tman.TManSamplePort;
+import tman.system.peer.tman.TManUpdateAvailableResourcesPort;
+import cyclon.system.peer.cyclon.CyclonUpdateAvailableResourcesPort;
 
 /**
  * Should have some comments here.
@@ -48,6 +50,8 @@ public final class ResourceManager extends ComponentDefinition {
     Negative<Web> webPort = negative(Web.class);
     Positive<TManSamplePort> tmanPort = positive(TManSamplePort.class);
     Positive<CyclonPort> cyclonPort = positive(CyclonPort.class);
+    Positive<CyclonUpdateAvailableResourcesPort> cyclonUarPort = positive(CyclonUpdateAvailableResourcesPort.class);
+    Positive<TManUpdateAvailableResourcesPort> tmanUarPort = positive(TManUpdateAvailableResourcesPort.class);
     ArrayList<PeerDescriptor> neighbours = new ArrayList<PeerDescriptor>();
 
     ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
@@ -151,8 +155,8 @@ public final class ResourceManager extends ComponentDefinition {
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
                 trigger(st, timerPort);
                 UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
-                trigger(uar, cyclonPort);
-                trigger(uar, tmanPort);
+                trigger(uar, cyclonUarPort);
+                trigger(uar, tmanUarPort);
             }
         }
     };
