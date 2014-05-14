@@ -16,12 +16,14 @@ public class ExchangeMsg {
 
         private static final long serialVersionUID = 8493601671018888143L;
         private final ArrayList<PeerDescriptor> randomBuffer;
+        boolean isCPU;
 
 
         public Request(ArrayList<PeerDescriptor> randomBuffer, Address source, 
-                Address destination) {
+                Address destination, boolean msgIsCPU) {
             super(source, destination);
             this.randomBuffer = randomBuffer;
+            isCPU = msgIsCPU;
         }
 
         public ArrayList<PeerDescriptor> getRandomBuffer() {
@@ -32,17 +34,24 @@ public class ExchangeMsg {
         public int getSize() {
             return 0;
         }
+
+        public boolean isCPU() {
+            return isCPU;
+        }
+        
     }
 
     public static class Response extends Message {
 
         private static final long serialVersionUID = -5022051054665787770L;
         private final ArrayList<PeerDescriptor> selectedBuffer;
+        boolean isCPU;
         //private final DescriptorBuffer selectedBuffer;
 
-        public Response(ArrayList<PeerDescriptor> selectedBuffer, Address source, Address destination) {
+        public Response(ArrayList<PeerDescriptor> selectedBuffer, Address source, Address destination, boolean msgIsCPU) {
             super(source, destination);
             this.selectedBuffer = selectedBuffer;
+            isCPU = msgIsCPU;
         }
 
 //        public Response(UUID requestId, DescriptorBuffer selectedBuffer, Address source, Address destination) {
@@ -59,6 +68,11 @@ public class ExchangeMsg {
         public int getSize() {
             return 0;
         }
+
+        public boolean isCPU() {
+            return isCPU;
+        }
+        
     }
 
     public static class RequestTimeout extends Timeout {

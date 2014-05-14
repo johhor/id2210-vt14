@@ -10,14 +10,19 @@ import se.sics.kompics.address.Address;
 
 public class TManSample extends Event {
 	ArrayList<PeerDescriptor> partners = new ArrayList<PeerDescriptor>();
+        boolean isCPU;
 
-
-	public TManSample(ArrayList<PeerDescriptor> partners) {
+	public TManSample(ArrayList<PeerDescriptor> partners, boolean isCPUMsg) {
 		this.partners = partners;
+                isCPU = isCPUMsg;
 	}
         
 	public TManSample() {
 	}
+
+    public boolean isCPU() {
+        return isCPU;
+    }
 
 
 	public ArrayList<PeerDescriptor> getSample() {

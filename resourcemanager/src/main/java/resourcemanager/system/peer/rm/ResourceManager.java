@@ -4,19 +4,14 @@ import common.configuration.RmConfiguration;
 import common.peer.AvailableResources;
 import common.simulation.RequestResource;
 import common.peer.UpdateAvailableResources;
-import cyclon.system.peer.cyclon.CyclonSample;
 import cyclon.system.peer.cyclon.CyclonPort;
 import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
 import se.sics.kompics.Negative;
@@ -52,17 +47,19 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<CyclonPort> cyclonPort = positive(CyclonPort.class);
     Positive<CyclonUpdateAvailableResourcesPort> cyclonUarPort = positive(CyclonUpdateAvailableResourcesPort.class);
     Positive<TManUpdateAvailableResourcesPort> tmanUarPort = positive(TManUpdateAvailableResourcesPort.class);
-    ArrayList<PeerDescriptor> neighbours = new ArrayList<PeerDescriptor>();
-
+    ArrayList<PeerDescriptor> neighboursCPU = new ArrayList<PeerDescriptor>();
+    ArrayList<PeerDescriptor> neighboursMEM = new ArrayList<PeerDescriptor>();
     ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
     //Stores respoce with smallest queue to request sent, stored by Request ID.
     HashMap<Integer, RequestHandler> responses = new HashMap<Integer, RequestHandler>();
 
     int currId;
+    double avgMEMPerCPU = 0.0;
     private Address self;
     private RmConfiguration configuration;
     Random random;
     private AvailableResources availableResources;
+    
     Comparator<PeerDescriptor> peerAgeComparator = new Comparator<PeerDescriptor>() {
         @Override
         public int compare(PeerDescriptor t, PeerDescriptor t1) {
@@ -78,7 +75,7 @@ public final class ResourceManager extends ComponentDefinition {
 
         subscribe(handleInit, control);
         subscribe(handleRequestResource, indexPort);
-        subscribe(handleUpdateTimeout, timerPort);
+//Legacy        subscribe(handleUpdateTimeout, timerPort);
         subscribe(handleTaskFinished, timerPort);
         subscribe(handleRequestTimeout, timerPort);
         subscribe(handleResourceAllocationRequest, networkPort);
@@ -102,7 +99,8 @@ public final class ResourceManager extends ComponentDefinition {
             currId = 0;
         }
     };
-
+/**
+ * Legacy handler
     Handler<UpdateTimeout> handleUpdateTimeout = new Handler<UpdateTimeout>() {
         @Override
         public void handle(UpdateTimeout event) {
@@ -116,7 +114,7 @@ public final class ResourceManager extends ComponentDefinition {
             PeerDescriptor dest = neighbours.get(random.nextInt(neighbours.size()));
 
         }
-    };
+    };**/
 
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
         @Override
@@ -166,19 +164,45 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(RequestResource event) {
 
             System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
-            // TODO: Ask for resources from neighbours
-            // by sending a ResourceRequest
-            sendRequestsToNeighbours(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource());
+            // Ask for resources from neighbours by sending a ResourceRequest
+            
+            boolean useCPUGradient;
+            try{
+                useCPUGradient = (event.getMemoryInMbs() / event.getNumCpus()) >= avgMEMPerCPU;
+            }catch(ArithmeticException ae){
+                useCPUGradient = false;
+            }
+            sendRequestsToNeighbours(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient);
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
         @Override
         public void handle(TManSample event) {
+            int sumMEM = 0;
+            int sumCPU = 0;
             System.out.println("Received samples: " + event.getSample().size());
-
             // receive a new list of neighbours
-            neighbours.clear();
-            neighbours.addAll(event.getSample());
+            if(event.isCPU()){
+                neighboursCPU.clear();
+                neighboursCPU.addAll(event.getSample());
+            }else if(!event.isCPU()){
+                neighboursMEM.clear();
+                neighboursMEM.addAll(event.getSample());
+            }
+            for(PeerDescriptor pd : neighboursMEM){
+                sumMEM += pd.getAvailableResources().getFreeMemInMbs();
+                sumCPU += pd.getAvailableResources().getNumFreeCpus();
+            }
+            for(PeerDescriptor pd : neighboursMEM){
+                sumMEM += pd.getAvailableResources().getFreeMemInMbs();
+                sumCPU += pd.getAvailableResources().getNumFreeCpus();
+            }
+            //Sets limit of requests dominant resource
+            try{
+                avgMEMPerCPU = sumMEM / sumCPU;
+            }catch(ArithmeticException ae){
+                avgMEMPerCPU = Double.MAX_VALUE;
+            }
         }
     };
     Handler<TaskFinished> handleTaskFinished = new Handler<TaskFinished>() {
@@ -207,23 +231,30 @@ public final class ResourceManager extends ComponentDefinition {
                     RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
                     trigger(allocate, networkPort);
                 } else {
-                    sendRequestsToNeighbours(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+                    boolean useCPUGradient;
+                    try{
+                        //IF event quote is smaller than average
+                        useCPUGradient = (rh.getAmountMemInMb()/rh.getNumCpus()) >= avgMEMPerCPU;
+                    } catch(ArithmeticException ae){
+                        useCPUGradient = false;
+                    }
+                    sendRequestsToNeighbours(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),useCPUGradient);
                 }
                 responses.remove(e.getId());
             }
         }
     };
 
-    private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource) {
-        ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(neighbours);
-        int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : neighbours.size();
+    private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU) {
+        ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(isCPU ? neighboursCPU : neighboursMEM);
+        int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : tempNeigh.size();
         if (amountOfProbes == 0) {
             RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource);
             trigger(allocate, networkPort);
         } else {
             responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource));
             for (int i = 0; i < amountOfProbes; i++) {
-                PeerDescriptor dest = tempNeigh.remove(random.nextInt(neighbours.size()));
+                PeerDescriptor dest = tempNeigh.remove(random.nextInt(tempNeigh.size()));
                 RequestResources.Request req = new RequestResources.Request(self, dest.getAddress(), numCpus, memoryInMb, currId);
                 trigger(req, networkPort);
             }
@@ -233,5 +264,4 @@ public final class ResourceManager extends ComponentDefinition {
             currId++;
         }
     }
-
 }

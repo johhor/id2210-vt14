@@ -81,5 +81,12 @@ public class PeerDescriptor implements Comparable<PeerDescriptor>, Serializable 
 	public String toString() {
 		return peerAddress + "";
 	}
+        
+        @Override
+        public PeerDescriptor clone(){
+            PeerDescriptor clone = new PeerDescriptor(peerAddress, availableResources);
+            clone.age = age;
+            return clone ;
+        }
 	
 }

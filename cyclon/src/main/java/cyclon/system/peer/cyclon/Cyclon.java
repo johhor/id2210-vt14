@@ -131,12 +131,11 @@ public final class Cyclon extends ComponentDefinition {
 			Address randomPeer = cache.selectPeerToShuffleWith();
 			
 			if (randomPeer != null) {
-				initiateShuffle(shuffleLength, randomPeer);
-                                trigger(new CyclonSample(getPartners()), samplePort);
+                            initiateShuffle(shuffleLength, randomPeer);
+                            trigger(new CyclonSample(getPartners()), samplePort);
 			}
 		}
 	};
-
 	
 	Handler<ShuffleRequest> handleShuffleRequest = new Handler<ShuffleRequest>() {
 		public void handle(ShuffleRequest event) {
