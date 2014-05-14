@@ -151,6 +151,7 @@ public final class ResourceManager extends ComponentDefinition {
                 ScheduleTimeout st = new ScheduleTimeout(event.getTime());
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
                 trigger(st, timerPort);
+                availableResources.setQueueLength(taskQueue.size());
                 UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
                 trigger(uar, cyclonUarPort);
                 trigger(uar, tmanUarPort);

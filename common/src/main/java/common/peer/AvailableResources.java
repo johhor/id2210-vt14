@@ -13,13 +13,20 @@ public class AvailableResources {
 
     private volatile int numFreeCpus;
     private volatile int freeMemInMbs;
+    private volatile int queueLength;
 
     public AvailableResources(int numFreeCpus, int freeMemInMbs) {
         this.numFreeCpus = numFreeCpus;
         this.freeMemInMbs = freeMemInMbs;
     }
 
+    public synchronized void setQueueLength(int queueLength) {
+        this.queueLength = queueLength;
+    }
     
+    public int getQueueLength() {
+        return queueLength;
+    }
 
     public synchronized boolean isAvailable(int numCpus, int memInMbs) {
         if (numFreeCpus >= numCpus && freeMemInMbs >= memInMbs) {

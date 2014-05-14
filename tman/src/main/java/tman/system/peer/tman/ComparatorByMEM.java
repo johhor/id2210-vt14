@@ -11,17 +11,18 @@ import se.sics.kompics.address.Address;
 /**
  * Make Node with Highest Id Leader in the Gradient
  */
-public class ComparatorByMEM implements Comparator<PeerDescriptor> {
-    PeerDescriptor self;
+public class ComparatorByMEM extends QueueLengthComparer implements Comparator<PeerDescriptor> {
 
     public ComparatorByMEM(PeerDescriptor self) {
-        this.self = self;
+        super(self);
     }
 
     @Override
     public int compare(PeerDescriptor o1, PeerDescriptor o2) {
         assert (o1.getAvailableResources().getFreeMemInMbs()== o2.getAvailableResources().getFreeMemInMbs());
-        if (o1.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o2.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
+        if (o1.getAvailableResources().getQueueLength()>0 && o2.getAvailableResources().getQueueLength()>0) {
+            return super.queueCompare(o1, o2);
+        } else if (o1.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o2.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
             return 1;
         } else if (o2.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o1.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
             return -1;

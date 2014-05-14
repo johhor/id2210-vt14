@@ -18,7 +18,6 @@ public class PeerDescriptor implements Comparable<PeerDescriptor>, Serializable 
                 this.availableResources = availableResources;
 	}
 
-
 	public int incrementAndGetAge() {
 		age++;
 		return age;
