@@ -141,7 +141,6 @@ public final class ResourceManager extends ComponentDefinition {
     };
 
     Handler<RequestResources.Allocate> handleAllocate = new Handler<RequestResources.Allocate>() {
-
         @Override
         public void handle(RequestResources.Allocate event) {
             boolean isAvalible = availableResources.isAvailable(event.getNumCpus(), event.getAmountMemInMb());
@@ -221,7 +220,6 @@ public final class ResourceManager extends ComponentDefinition {
         }
     };
     Handler<RequestResources.RequestTimeout> handleRequestTimeout = new Handler<RequestResources.RequestTimeout>() {
-
         @Override
         public void handle(RequestResources.RequestTimeout e) {
             RequestHandler rh = responses.get(e.getId());

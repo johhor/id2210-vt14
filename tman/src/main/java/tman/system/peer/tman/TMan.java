@@ -7,6 +7,7 @@ import cyclon.system.peer.cyclon.CyclonSample;
 import cyclon.system.peer.cyclon.CyclonSamplePort;
 import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.slf4j.Logger;
@@ -121,45 +122,12 @@ public final class TMan extends ComponentDefinition {
                 if (!buff.contains(selfGPD)) {
                     buff.add(selfGPD);
                 }
-
                 trigger(new ExchangeMsg.Request(buff, self, p, isCPU), networkPort);
+                
+                //TODO Timeout
             }
     }
-    /*Selects a random peer from the the top 50% of peers in the current view*/
-
-    private PeerDescriptor selectPeer(boolean isCPU) {
-        ArrayList<PeerDescriptor> buffer = isCPU ? 
-                new ArrayList<PeerDescriptor>(tmanCPUPartners) : new ArrayList<PeerDescriptor>(tmanMEMPartners);
-        ArrayList<PeerDescriptor> sample = new ArrayList<PeerDescriptor>();
-        int loopLength = buffer.size();
-        for (int i = 0; i < loopLength; i++) {
-            sample.add(isCPU ? getSoftMaxCpu(buffer) : getSoftMaxMem(buffer));  
-            buffer.remove(sample.get(i));
-        }
-        return sample.get(r.nextInt((int) Math.ceil(sample.size() / 2.0)));
-    }
-    /* Selects a view from a buffer, taking 1/2 of the addresses using the 
-     getSoftMax function */
-
-    private void selectView(ArrayList<PeerDescriptor> buf, boolean isCPU) {
-        ArrayList<PeerDescriptor> temp = new ArrayList<PeerDescriptor>(buf);
-
-        buf.clear();
-        int newViewSize = temp.size() / 2;
-        for (int i = 0; i < newViewSize; i++) {      
-            buf.add(isCPU ? getSoftMaxCpu(temp) : getSoftMaxMem(temp) );
-            temp.remove(buf.get(i));
-        }
-    }
-    /*Merges two lists of addresses into the first argument*/
-    private void merge(List<PeerDescriptor> buf, List<PeerDescriptor> view) {
-        for (PeerDescriptor a : view) {
-            if (!buf.contains(a.clone())) {
-                buf.add(a);
-            }
-        }
-    }
-
+    
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
@@ -220,13 +188,51 @@ public final class TMan extends ComponentDefinition {
     };
 
     Handler<UpdateAvailableResources> handleUpdateAvailableResources = new Handler<UpdateAvailableResources>() {
-
         @Override
         public void handle(UpdateAvailableResources e) {
             availableResources = e.getAvailableResources();
         }
     };
 
+    /*Selects a random peer from the the top 50% of peers in the current view*/
+    private PeerDescriptor selectPeer(boolean isCPU) {
+        ArrayList<PeerDescriptor> buffer = isCPU ? 
+                new ArrayList<PeerDescriptor>(tmanCPUPartners) : new ArrayList<PeerDescriptor>(tmanMEMPartners);
+        ArrayList<PeerDescriptor> sample = new ArrayList<PeerDescriptor>();
+        int loopLength = buffer.size();
+        for (int i = 0; i < loopLength; i++) {
+            sample.add(isCPU ? getSoftMaxCpu(buffer) : getSoftMaxMem(buffer));  
+            buffer.remove(sample.get(i));
+        }
+        return sample.get(r.nextInt((int) Math.ceil(sample.size() / 2.0)));
+    }
+    /* Selects a view from a buffer, taking 1/2 of the addresses using the 
+     getSoftMax function */
+
+    private void selectView(ArrayList<PeerDescriptor> buf, boolean isCPU) {
+        ArrayList<PeerDescriptor> temp = new ArrayList<PeerDescriptor>(buf);
+        buf.clear();
+        int newViewSize = temp.size() / 2;
+        for (int i = 0; i < newViewSize; i++) {      
+            buf.add(isCPU ? getSoftMaxCpu(temp) : getSoftMaxMem(temp) );
+            temp.remove(buf.get(i));
+        }
+    }
+    /*Merges two lists of addresses into the first argument*/
+    private void merge(List<PeerDescriptor> buf, List<PeerDescriptor> view) {
+        for (PeerDescriptor a : view) {
+            if(buf.contains(a)){
+                if(a.getAge() < buf.get(buf.indexOf(a)).getAge()){
+                    buf.remove(a);//Older descriptor
+                    buf.add(a); //Add the newer descriptor instead
+                }
+            }
+            else if (!buf.contains(a.clone())) {
+                buf.add(a);
+            }
+        }
+    }
+    
     /**
      * TODO - if you call this method with a list of entries, it will return a
      * single node, weighted towards the 'best' node (as defined by
@@ -236,19 +242,17 @@ public final class TMan extends ComponentDefinition {
      * '0.0' will throw a divide by zero exception :) Reference:
      http://webdocs.cs.ualberta.ca/~sutton/book/2/node4.html*
      */
+    
     public PeerDescriptor getSoftMaxCpu(List<PeerDescriptor> entries) {
-        //Collections.sort(entries, new ComparatorById(self));
+        Collections.sort(entries, new ComparatorByCPU(getSelf()));
 
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
-        //int j = entries.size() + 1;
+        int j = entries.size() + 1;
         /*Initializes the valueslist*/
         for (int i = 0; i < entries.size(); i++) {
-            // get inverse of values - lowest have highest value.
-//            double val = j;
-            double val = entries.get(i).getAvailableResources().getNumFreeCpus();
-//            j--;
+            double val = j--;
             values[i] = Math.exp(val / tmanConfiguration.getTemperature());
             total += values[i];
         }
@@ -267,17 +271,15 @@ public final class TMan extends ComponentDefinition {
     }
 
     public PeerDescriptor getSoftMaxMem(List<PeerDescriptor> entries) {
-        //Collections.sort(entries, new ComparatorById(self));
+        Collections.sort(entries, new ComparatorByMEM(getSelf()));
 
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
-        //int j = entries.size() + 1;
+        int j = entries.size() + 1;
         /*Initializes the valueslist*/
         for (int i = 0; i < entries.size(); i++) {
-            //The values of each index is the resource of the corresponding node
-            double val = entries.get(i).getAvailableResources().getFreeMemInMbs();
-
+            double val = j--;
             values[i] = Math.exp(val / tmanConfiguration.getTemperature());
             total += values[i];
         }
