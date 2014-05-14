@@ -96,8 +96,11 @@ public final class TMan extends ComponentDefinition {
         @Override
         public void handle(TManSchedule event) {
             ArrayList<Address> tmanPartnersForSnapshot = new ArrayList<Address>();
-            for (PeerDescriptor gpd : tmanPartners)
+            for (PeerDescriptor gpd : tmanPartners) {
                 tmanPartnersForSnapshot.add(gpd.getAddress());
+                //increment age
+                gpd.incrementAndGetAge();
+            }
             
             Snapshot.updateTManPartners(self, tmanPartnersForSnapshot);
             
@@ -218,7 +221,37 @@ public final class TMan extends ComponentDefinition {
      A temperature of '0.0' will throw a divide by zero exception :)
      Reference:
      http://webdocs.cs.ualberta.ca/~sutton/book/2/node4.html**/
-    public PeerDescriptor getSoftMaxAddress(List<PeerDescriptor> entries) {
+    public PeerDescriptor getSoftMaxCpu(List<PeerDescriptor> entries) {
+        //Collections.sort(entries, new ComparatorById(self));
+
+        double rnd = r.nextDouble();
+        double total = 0.0d;
+        double[] values = new double[entries.size()];
+        //int j = entries.size() + 1;
+        /*Initializes the valueslist*/
+        for (int i = 0; i < entries.size(); i++) {
+            // get inverse of values - lowest have highest value.
+//            double val = j;
+            double val = entries.get(i).getAvailableResources().getNumFreeCpus();
+//            j--;
+            values[i] = Math.exp(val / tmanConfiguration.getTemperature());
+            total += values[i];
+        }
+
+        for (int i = 0; i < values.length; i++) {
+            if (i != 0) {
+                values[i] += values[i - 1];
+            }
+            // normalise the probability for this entry
+            double normalisedUtility = values[i] / total;
+            if (normalisedUtility >= rnd) {
+                return entries.get(i);
+            }
+        }
+        return entries.get(entries.size() - 1);
+    }
+
+    public PeerDescriptor getSoftMaxMem(List<PeerDescriptor> entries) {
         //Collections.sort(entries, new ComparatorById(self));
 
         double rnd = r.nextDouble();
@@ -247,5 +280,4 @@ public final class TMan extends ComponentDefinition {
         }
         return entries.get(entries.size() - 1);
     }
-
 }
