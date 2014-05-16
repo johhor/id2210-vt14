@@ -9,6 +9,8 @@ package resourcemanager.system.peer.rm;
 import common.peer.AvailableResources;
 import se.sics.kompics.address.Address;
 import se.sics.kompics.network.Message;
+import se.sics.kompics.timer.ScheduleTimeout;
+import se.sics.kompics.timer.Timeout;
 
 public class SearchResourceMsg {
     
@@ -57,5 +59,17 @@ public class SearchResourceMsg {
         }
         
     }
+        public static class RequestTimeout extends Timeout {
+        private final int id;
+        RequestTimeout(ScheduleTimeout st, int id) {
+            super(st);
+            this.id = id;
+        }
+
+        public int getId() {
+            return id;
+        }
+    }
+
     
 }

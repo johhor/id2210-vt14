@@ -14,22 +14,23 @@ public class RequestHandler {
     private final int numCpus;
     private final int amountMemInMb;
     private final int time;
-    
+    private final boolean isCPUMsg;
     int waitingNumRes;
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time) {
+    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
         this.time =time;
+        isCPUMsg = isCPU;
     }
     
-    public RequestResources.Response isBestResponse(RequestResources.Response response) {
+    public RequestResources.Response isBestAndLastResponse(RequestResources.Response response) {
         waitingNumRes--;
         if (bestResponse == null) {
             bestResponse = response;
-        } else if (!bestResponse.getSuccess() && response.getSuccess()) {
+        } else if (!bestResponse.isAvailable() && response.isAvailable()) {
             bestResponse = response;
         } else if (bestResponse.getQueueSize()>response.getQueueSize()) {
             bestResponse = response;
@@ -52,4 +53,9 @@ public class RequestHandler {
     public int getTime() {
         return time;
     }
+
+    public boolean isCPUMsg() {
+        return isCPUMsg;
+    }
+    
 }

@@ -39,12 +39,12 @@ public class RequestResources  {
     
     public static class Response extends Message {
         private final int queueSize;
-        private final boolean success;
+        private final boolean available;
         private  final  int id;
         public Response(Address source, Address destination, boolean success, int queueSize, int id) {
             super(source, destination);
             this.queueSize = queueSize;
-            this.success = success;
+            this.available = success;
             this.id = id;
         }
         
@@ -52,8 +52,8 @@ public class RequestResources  {
             return queueSize;
         }
         
-        public boolean getSuccess(){
-            return success;
+        public boolean isAvailable(){
+            return available;
         }
         public int getId(){
             return id;

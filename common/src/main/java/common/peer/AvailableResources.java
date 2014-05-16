@@ -29,7 +29,7 @@ public class AvailableResources {
     }
 
     public synchronized boolean isAvailable(int numCpus, int memInMbs) {
-        if (numFreeCpus >= numCpus && freeMemInMbs >= memInMbs) {
+        if (numFreeCpus >= numCpus && freeMemInMbs >= memInMbs && queueLength==0) {
             return true;
         }
         return false;
