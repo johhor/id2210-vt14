@@ -96,7 +96,7 @@ public final class ResourceManager extends ComponentDefinition {
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
             rst.setTimeoutEvent(new UpdateTimeout(rst));
             trigger(rst, timerPort);
-            currId = 0;
+            currId = Integer.MIN_VALUE;
         }
     };
 /**
@@ -139,7 +139,6 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
-
     Handler<RequestResources.Allocate> handleAllocate = new Handler<RequestResources.Allocate>() {
         @Override
         public void handle(RequestResources.Allocate event) {
@@ -158,7 +157,6 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
-
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
@@ -243,7 +241,33 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
+    
+    Handler<SearchResourceMsg.Request> searchRequestHandler = new Handler<SearchResourceMsg.Request>() {
 
+        @Override
+        public void handle(SearchResourceMsg.Request event) {
+            int first = 0;
+            Address bestNeigbour = event.isCpuMsg() ? neighboursCPU.get(first).getAddress() : neighboursMEM.get(first).getAddress();
+            SearchResourceMsg.Response response = new SearchResourceMsg.Response(self, event.getSource(),bestNeigbour,availableResources, event.getMsgId());
+            trigger(response, networkPort);
+        }
+    };
+
+     Handler<SearchResourceMsg.Response> searchResponseHandler = new Handler<SearchResourceMsg.Response>(){
+        @Override
+        public void handle(SearchResourceMsg.Response event) {
+            ResourceHandler rh = responses.get(event.getMsgId());
+        }
+    };
+    
+     int getNextMsgId(){
+         try{
+             return currId++;
+         }catch(Exception e){
+             return currId = Integer.MIN_VALUE;
+         }
+     }
+     
     private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU) {
         ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(isCPU ? neighboursCPU : neighboursMEM);
         int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : tempNeigh.size();
@@ -252,15 +276,15 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(allocate, networkPort);
         } else {
             responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource));
+            int id = getNextMsgId();
             for (int i = 0; i < amountOfProbes; i++) {
                 PeerDescriptor dest = tempNeigh.remove(random.nextInt(tempNeigh.size()));
-                RequestResources.Request req = new RequestResources.Request(self, dest.getAddress(), numCpus, memoryInMb, currId);
+                RequestResources.Request req = new RequestResources.Request(self, dest.getAddress(), numCpus, memoryInMb, id);
                 trigger(req, networkPort);
             }
             ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
-            st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
+            st.setTimeoutEvent(new RequestResources.RequestTimeout(st, id));
             trigger(st, timerPort);
-            currId++;
         }
     }
 }
