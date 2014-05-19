@@ -181,9 +181,9 @@ public final class ResourceManager extends ComponentDefinition {
             System.out.println("Received samples: " + event.getSample().size());
             // receive a new list of neighbours
             if(event.isCPU()){
-                neighboursCPU = replaceAllKeepOldest(event.getSample(),neighboursCPU);
+                neighboursCPU = replaceAllKeepNewest(event.getSample(),neighboursCPU);
             }else if(!event.isCPU()){
-                neighboursMEM = replaceAllKeepOldest(event.getSample(),neighboursMEM);
+                neighboursMEM = replaceAllKeepNewest(event.getSample(),neighboursMEM);
             }
             for(PeerDescriptor pd : neighboursMEM){
                 sumMEM += pd.getAvailableResources().getFreeMemInMbs();
@@ -360,7 +360,7 @@ public final class ResourceManager extends ComponentDefinition {
     }
     //goes through the existing and new list from TMan and returns a list with the 
     //entries from the new, unless an newer version exists in the existing list.
-    private ArrayList<PeerDescriptor> replaceAllKeepOldest(ArrayList<PeerDescriptor> tmanSample, ArrayList<PeerDescriptor> existing){
+    private ArrayList<PeerDescriptor> replaceAllKeepNewest(ArrayList<PeerDescriptor> tmanSample, ArrayList<PeerDescriptor> existing){
         ArrayList<PeerDescriptor> output = new ArrayList<PeerDescriptor>(tmanSample.size());
         
         for(PeerDescriptor pd : tmanSample){
