@@ -24,6 +24,7 @@ public class StatisticsSet<T> {
     }
     
     public ArrayList<T> get99thPercentile(){
+        Collections.sort(statisticsList, comp);
         //95% of the list size
         double listSize = statisticsList.size();
         int startIndex = (int)Math.floor(listSize*0.99);
