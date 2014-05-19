@@ -222,7 +222,7 @@ public final class ResourceManager extends ComponentDefinition {
             } else {
             responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource));
             for (int i = 0; i < amountOfProbes; i++) {
-                Address dest = tempNeigh.remove(random.nextInt(neighbours.size()));
+                Address dest = tempNeigh.remove(random.nextInt(tempNeigh.size()));
                 RequestResources.Request req = new RequestResources.Request(self, dest, numCpus, memoryInMb,currId);
                 trigger(req, networkPort);
             }
