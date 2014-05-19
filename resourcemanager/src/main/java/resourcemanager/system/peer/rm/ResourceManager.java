@@ -295,7 +295,7 @@ public final class ResourceManager extends ComponentDefinition {
                 trigger(allocate, networkPort);
                 searchResponses.remove(event.getMsgId());
             } else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() > event.getAskedNodesResources().getQueueLength()) {
-                sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event);
+                sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
             }
             
         }
