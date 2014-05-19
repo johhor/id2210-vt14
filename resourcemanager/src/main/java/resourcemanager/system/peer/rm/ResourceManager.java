@@ -126,6 +126,9 @@ public final class ResourceManager extends ComponentDefinition {
                 if(best.isAvailable()){
                 RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
                 trigger(allocate, networkPort);
+                
+                //TODO: Add Statistics
+                
                 requestResourceResponses.remove(event.getId());
             }else{
                 sendSearchRequestsToNeighbour(best.getSource(),rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(),rh.isCPUMsg());
@@ -188,7 +191,7 @@ public final class ResourceManager extends ComponentDefinition {
                 sumMEM += pd.getAvailableResources().getFreeMemInMbs();
                 sumCPU += pd.getAvailableResources().getNumFreeCpus();
             }
-            for(PeerDescriptor pd : neighboursMEM){
+            for(PeerDescriptor pd : neighboursCPU){
                 sumMEM += pd.getAvailableResources().getFreeMemInMbs();
                 sumCPU += pd.getAvailableResources().getNumFreeCpus();
             }
