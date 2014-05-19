@@ -9,11 +9,11 @@ import java.util.Comparator;
  * Implementation of the Statistics set class into one class to make it 
  * more manageable in classes using statistics
  **/
-public class ProjectStatistics {
+public class RunTimeStatistics {
     private StatisticsSet<Double> allocationTimes;
     private StatisticsSet<Double> searchTimes;
     
-    public ProjectStatistics(){
+    public RunTimeStatistics(){
         Comparator<Double> comp = createComparator();
         allocationTimes = new StatisticsSet<Double>(comp);
         searchTimes = new StatisticsSet<Double>(comp);
