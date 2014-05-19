@@ -359,7 +359,7 @@ public final class ResourceManager extends ComponentDefinition {
         }
     }
     //goes through the existing and new list from TMan and returns a list with the 
-    //entries from the new, unless an older version exists in the existing list.
+    //entries from the new, unless an newer version exists in the existing list.
     private ArrayList<PeerDescriptor> replaceAllKeepOldest(ArrayList<PeerDescriptor> tmanSample, ArrayList<PeerDescriptor> existing){
         ArrayList<PeerDescriptor> output = new ArrayList<PeerDescriptor>(tmanSample.size());
         
@@ -367,10 +367,10 @@ public final class ResourceManager extends ComponentDefinition {
             if(existing.contains(pd)){
                 PeerDescriptor exists = existing.get(tmanSample.indexOf(pd));
                 if(peerAgeComparator.compare(pd, exists) == 1){ 
-                    output.add(pd);
+                    output.add(exists);
                 }
                 else{
-                    output.add(exists);
+                    output.add(pd);
                 } 
             }
             else{
