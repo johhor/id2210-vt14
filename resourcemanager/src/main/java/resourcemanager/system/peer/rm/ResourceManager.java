@@ -383,7 +383,7 @@ public final class ResourceManager extends ComponentDefinition {
         
         for(PeerDescriptor pd : tmanSample){
             if(existing.contains(pd)){
-                PeerDescriptor exists = existing.get(tmanSample.indexOf(pd));
+                PeerDescriptor exists = existing.get(existing.indexOf(pd));
                 if(peerAgeComparator.compare(pd, exists) == 1){ 
                     output.add(exists);
                 }
