@@ -182,14 +182,13 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(RequestResource event) {
             System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // Ask for resources from neighbours by sending a ResourceRequest
-            double currTime= getSystemTime();
             boolean useCPUGradient;
             try{
                 useCPUGradient = (event.getMemoryInMbs() / event.getNumCpus()) >= avgMEMPerCPU;
             }catch(ArithmeticException ae){
                 useCPUGradient = false;
             }
-            sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient,currTime);
+            sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient,getSystemTime());
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
