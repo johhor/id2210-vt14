@@ -20,26 +20,26 @@ import java.util.logging.Logger;
  * more manageable in classes using statistics
  **/
 public class RunTimeStatistics {
-    private StatisticsSet<Double> allocationTimes;
-    private StatisticsSet<Double> searchTimes;
+    private StatisticsSet<Long> allocationTimes;
+    private StatisticsSet<Long> searchTimes;
     private int nodeName;
     public RunTimeStatistics(int nodeName){
-        Comparator<Double> comp = createComparator();
-        allocationTimes = new StatisticsSet<Double>(comp);
-        searchTimes = new StatisticsSet<Double>(comp);
+        Comparator<Long> comp = createComparator();
+        allocationTimes = new StatisticsSet<Long>(comp);
+        searchTimes = new StatisticsSet<Long>(comp);
         this.nodeName = nodeName;
     }
     
-    public Comparator<Double> createComparator(){
-        return new Comparator<Double>() {
+    public Comparator<Long> createComparator(){
+        return new Comparator<Long>() {
             @Override
-            public int compare(Double o1, Double o2) {
-                return Double.compare(o1, o2);
+            public int compare(Long o1, Long o2) {
+                return Long.compare(o1, o2);
             }
         };
     }
     private int j=0;
-    public void addAllocationTime(Double time){
+    public void addAllocationTime(long time){
         allocationTimes.addData(time);
         
         try {
@@ -61,19 +61,19 @@ public class RunTimeStatistics {
     public void closeWriter(){
             
     }
-    public void addSearchTime(Double time){
+    public void addSearchTime(long time){
         allocationTimes.addData(time);
     }
-    public ArrayList<Double> getAllocationTimes(){
+    public ArrayList<Long> getAllocationTimes(){
         return allocationTimes.getData();
     }
-    public ArrayList<Double> getSearchTimes(){
+    public ArrayList<Long> getSearchTimes(){
         return searchTimes.getData();
     }
-    public ArrayList<Double> get99thPercentileAllocationTimes(){
+    public ArrayList<Long> get99thPercentileAllocationTimes(){
          return allocationTimes.get99thPercentile();
     }
-    public ArrayList<Double> get99thPercentileSearchTimes(){
+    public ArrayList<Long> get99thPercentileSearchTimes(){
         return searchTimes.get99thPercentile();
     }
 }

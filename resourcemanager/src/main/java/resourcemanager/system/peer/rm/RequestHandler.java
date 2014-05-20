@@ -16,11 +16,11 @@ public class RequestHandler {
     private final int time;
     private final boolean isCPUMsg;
     private int waitingNumRes;
-    private double timeCreatedAt;
+    private long timeCreatedAt;
     
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, double currTime) {
+    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long currTime) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
@@ -61,7 +61,7 @@ public class RequestHandler {
         return isCPUMsg;
     }
 
-    public double getTimeCreatedAt() {
+    public long getTimeCreatedAt() {
         return timeCreatedAt;
     }
 }

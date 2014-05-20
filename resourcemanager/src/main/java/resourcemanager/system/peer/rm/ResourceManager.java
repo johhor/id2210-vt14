@@ -171,7 +171,7 @@ public final class ResourceManager extends ComponentDefinition {
                 UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
                 trigger(uar, cyclonUarPort);
                 trigger(uar, tmanUarPort);
-                double timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
+                long timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
                 stat.addAllocationTime(timeToSchedule);
             }
         }
@@ -249,8 +249,7 @@ public final class ResourceManager extends ComponentDefinition {
                         trigger(allocate, networkPort);
                         requestResourceResponses.remove(e.getId());
                     }
-                    else{
-                        
+                    else{                        
                         sendSearchRequestsToNeighbour(bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(), rh.isCPUMsg(),rh.getTimeCreatedAt());
                     }
                 } 
@@ -316,22 +315,18 @@ public final class ResourceManager extends ComponentDefinition {
                 RequestResources.Allocate allocate = new RequestResources.Allocate(self, event.getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.getTimeCreatedAt());
                 trigger(allocate, networkPort);
                 searchResponses.remove(event.getMsgId());
-                System.out.println("1");
             }
             else if(bsr.getBestResponse() == null){//If we havent received a responce earlier
                 bsr.replaceBestResponse(event);
                 //System.out.println("Best response is Null :(");
                 sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
-                System.out.println("2");
             }
             else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() <= event.getAskedNodesResources().getQueueLength()) {
                 RequestResources.Allocate allocate = new RequestResources.Allocate(self, bsr.getBestResponse().getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.getTimeCreatedAt());
                 trigger(allocate, networkPort);
                 searchResponses.remove(event.getMsgId());
-                System.out.println("3");
             } else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() > event.getAskedNodesResources().getQueueLength()) {
                 sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
-                System.out.println("4");
             }
             
         }
@@ -345,7 +340,7 @@ public final class ResourceManager extends ComponentDefinition {
          }
      }
      
-     private void sendRequestsToRandomNeighbourSet(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, double startTime) {
+     private void sendRequestsToRandomNeighbourSet(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, long startTime) {
         ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(isCPU ? neighboursCPU : neighboursMEM);
         int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : tempNeigh.size();
         
@@ -369,10 +364,10 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(st, timerPort);
         }
     }
-    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU,double createdAt){
+    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU,long createdAt){
         sendSearchRequestsToNeighbour(dest,numCpus,memoryInMb,timeToHoldResource,isCPU,EMPTY_INDEX,createdAt);
     }     
-    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, int previousMsgId, double createdAt) {
+    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, int previousMsgId, long createdAt) {
         //If we dont have any neighbours we allocate task to our self
         if ((isCPU && neighboursCPU.isEmpty()) || (!isCPU && neighboursMEM.isEmpty())) {
             RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource,createdAt);
@@ -420,10 +415,10 @@ public final class ResourceManager extends ComponentDefinition {
         return output;
     }
     
-    private double getSystemTime(){
+    private long getSystemTime(){
         return System.currentTimeMillis();
     }
-    private double getTimeElapsedUntilNowFrom(double from){
+    private long getTimeElapsedUntilNowFrom(long from){
         return  System.currentTimeMillis()-from;
     }
 }
