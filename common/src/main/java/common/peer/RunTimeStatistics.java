@@ -1,9 +1,12 @@
 
 package common.peer;
 
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -19,11 +22,17 @@ import java.util.logging.Logger;
 public class RunTimeStatistics {
     private StatisticsSet<Double> allocationTimes;
     private StatisticsSet<Double> searchTimes;
+    private PrintWriter writer;
     
-    public RunTimeStatistics(){
+    public RunTimeStatistics(int nodeName){
         Comparator<Double> comp = createComparator();
         allocationTimes = new StatisticsSet<Double>(comp);
         searchTimes = new StatisticsSet<Double>(comp);
+        try {
+            writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
+        } catch (IOException ex) {
+            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public Comparator<Double> createComparator(){
@@ -34,24 +43,18 @@ public class RunTimeStatistics {
             }
         };
     }
-    public void addAllocationTime(Double time,int nodeName){
+    public void addAllocationTime(Double time){
         allocationTimes.addData(time);
         int j=0;
-        try {
-            PrintWriter writer = new PrintWriter("testStat"+nodeName+".tst","UTF-8");
             for(double d : get99thPercentileAllocationTimes()){
                 writer.print(d+", ");
                 if (j++ > 10)
                     writer.println("");
             }
+    }
+    public void closeWriter(){
             writer.flush();
             writer.close();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
     }
     public void addSearchTime(Double time){
         allocationTimes.addData(time);

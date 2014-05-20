@@ -18,10 +18,12 @@ public class ComparatorByCPU extends QueueLengthComparer implements Comparator<P
     }
     @Override
     public int compare(PeerDescriptor o1, PeerDescriptor o2) {
-        assert (o1.getAvailableResources().getNumFreeCpus() == o2.getAvailableResources().getNumFreeCpus());
+        if (o1.getAvailableResources().getNumFreeCpus() == o2.getAvailableResources().getNumFreeCpus())
+            return 0;
         if (o1.getAvailableResources().getQueueLength()>0 && o2.getAvailableResources().getQueueLength()>0) {
             return super.queueCompare(o1, o2);
-        } else if (o1.getAvailableResources().getNumFreeCpus() < self.getAvailableResources().getNumFreeCpus() && o2.getAvailableResources().getNumFreeCpus() > self.getAvailableResources().getNumFreeCpus()) {
+        } else 
+            if (o1.getAvailableResources().getNumFreeCpus() < self.getAvailableResources().getNumFreeCpus() && o2.getAvailableResources().getNumFreeCpus() > self.getAvailableResources().getNumFreeCpus()) {
             return 1;
         } else if (o2.getAvailableResources().getNumFreeCpus() < self.getAvailableResources().getNumFreeCpus() && o1.getAvailableResources().getNumFreeCpus() > self.getAvailableResources().getNumFreeCpus()) {
             return -1;

@@ -19,10 +19,12 @@ public class ComparatorByMEM extends QueueLengthComparer implements Comparator<P
 
     @Override
     public int compare(PeerDescriptor o1, PeerDescriptor o2) {
-        assert (o1.getAvailableResources().getFreeMemInMbs()== o2.getAvailableResources().getFreeMemInMbs());
+        if (o1.getAvailableResources().getFreeMemInMbs()== o2.getAvailableResources().getFreeMemInMbs())
+            return 0;
         if (o1.getAvailableResources().getQueueLength()>0 && o2.getAvailableResources().getQueueLength()>0) {
             return super.queueCompare(o1, o2);
-        } else if (o1.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o2.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
+        } else 
+            if (o1.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o2.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
             return 1;
         } else if (o2.getAvailableResources().getFreeMemInMbs() < self.getAvailableResources().getFreeMemInMbs() && o1.getAvailableResources().getFreeMemInMbs() > self.getAvailableResources().getFreeMemInMbs()) {
             return -1;

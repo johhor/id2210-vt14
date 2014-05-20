@@ -67,7 +67,7 @@ public final class ResourceManager extends ComponentDefinition {
     private RmConfiguration configuration;
     Random random;
     private AvailableResources availableResources;
-    private RunTimeStatistics stat = new RunTimeStatistics();
+    private RunTimeStatistics stat;
             
     Comparator<PeerDescriptor> peerAgeComparator = new Comparator<PeerDescriptor>() {
         @Override
@@ -109,6 +109,7 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(rst, timerPort);
             currId = MSG_ID_START_VALUE;
             avgMEMPerCPU = 0.0;
+            stat = new RunTimeStatistics(self.getId());
         }
     };
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
@@ -158,7 +159,7 @@ public final class ResourceManager extends ComponentDefinition {
                 trigger(uar, cyclonUarPort);
                 trigger(uar, tmanUarPort);
                 double timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
-                stat.addAllocationTime(timeToSchedule,self.getId());
+                stat.addAllocationTime(timeToSchedule);
             }
         }
     };
@@ -217,7 +218,7 @@ public final class ResourceManager extends ComponentDefinition {
                     ScheduleTimeout st = new ScheduleTimeout(first.getTime());
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
-                    stat.addAllocationTime(getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()),self.getId());
+                    stat.addAllocationTime(getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()));
                 }
             }
         }
@@ -304,7 +305,7 @@ public final class ResourceManager extends ComponentDefinition {
             }
             else if(bsr.getBestResponse() == null){//If we havent received a responce earlier
                 bsr.replaceBestResponse(event);
-                System.out.print("Bestresponce is Null :(");
+                System.out.println("Best response is Null :(");
                 sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
             }
             else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() <= event.getAskedNodesResources().getQueueLength()) {
@@ -402,6 +403,6 @@ public final class ResourceManager extends ComponentDefinition {
         return System.currentTimeMillis();
     }
     private double getTimeElapsedUntilNowFrom(double from){
-        return from - System.currentTimeMillis();
+        return  System.currentTimeMillis()-from;
     }
 }

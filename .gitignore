@@ -9,3 +9,4 @@ release.properties
 resourcemanager/search.out
 *.tst
 *.out
+*.out
