@@ -15,15 +15,18 @@ public class RequestHandler {
     private final int amountMemInMb;
     private final int time;
     private final boolean isCPUMsg;
-    int waitingNumRes;
+    private int waitingNumRes;
+    private double timeCreatedAt;
+    
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU) {
+    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, double currTime) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
         this.time =time;
         isCPUMsg = isCPU;
+        timeCreatedAt = currTime;
     }
     
     public RequestResources.Response isBestAndLastResponse(RequestResources.Response response) {
@@ -57,5 +60,8 @@ public class RequestHandler {
     public boolean isCPUMsg() {
         return isCPUMsg;
     }
-    
+
+    public double getTimeCreatedAt() {
+        return timeCreatedAt;
+    }
 }

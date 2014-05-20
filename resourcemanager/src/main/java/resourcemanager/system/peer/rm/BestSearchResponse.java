@@ -15,15 +15,16 @@ public class BestSearchResponse {
     private final int amountMemInMb;
     private final int time;
     private final boolean isCpuMsg;
-    
+    private final double timeCreatedAt;
     SearchResourceMsg.Response bestResponse;
     
-    public BestSearchResponse(int numCpus, int amountMemInMb, int time, boolean isCpuMsg, SearchResourceMsg.Response bestResponse) {
+    public BestSearchResponse(int numCpus, int amountMemInMb, int time, boolean isCpuMsg, SearchResourceMsg.Response bestResponse, double createdAt) {
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
         this.time =time;
         this.isCpuMsg = isCpuMsg;
         this.bestResponse = bestResponse;
+        this.timeCreatedAt = createdAt;
     }
     
     public void replaceBestResponse(SearchResourceMsg.Response response) {
@@ -46,5 +47,8 @@ public class BestSearchResponse {
     }
     public int getTime() {
         return time;
+    }
+    public double getTimeCreatedAt() {
+        return timeCreatedAt;
     }
 }

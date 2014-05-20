@@ -2,6 +2,7 @@ package resourcemanager.system.peer.rm;
 
 import common.configuration.RmConfiguration;
 import common.peer.AvailableResources;
+import common.peer.RunTimeStatistics;
 import common.simulation.RequestResource;
 import common.peer.UpdateAvailableResources;
 import cyclon.system.peer.cyclon.CyclonPort;
@@ -38,6 +39,7 @@ public final class ResourceManager extends ComponentDefinition {
     static final int STANDARD_TIME_OUT_DELAY = 500;
     static final int MAX_NUM_PROBES = 4;
     static final int EMPTY_INDEX = Integer.MIN_VALUE;
+    static final int MSG_ID_START_VALUE = Integer.MIN_VALUE+1;
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceManager.class);
     Positive<RmPort> indexPort = positive(RmPort.class);
@@ -48,22 +50,25 @@ public final class ResourceManager extends ComponentDefinition {
     Positive<CyclonPort> cyclonPort = positive(CyclonPort.class);
     Positive<CyclonUpdateAvailableResourcesPort> cyclonUarPort = positive(CyclonUpdateAvailableResourcesPort.class);
     Positive<TManUpdateAvailableResourcesPort> tmanUarPort = positive(TManUpdateAvailableResourcesPort.class);
+    
+    //Lists storing the nodes state
     ArrayList<PeerDescriptor> neighboursCPU = new ArrayList<PeerDescriptor>();
     ArrayList<PeerDescriptor> neighboursMEM = new ArrayList<PeerDescriptor>();
     ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
     
     HashMap<Integer, BestSearchResponse> searchResponses = new HashMap<Integer, BestSearchResponse>();
-    //Stores respoce with smallest queue to request sent, stored by Request ID.
+    //Stores the response with smallest queue to request sent, for each Request ID.
     HashMap<Integer, RequestHandler> requestResourceResponses = new HashMap<Integer, RequestHandler>();
 
     int currId;
     
-    double avgMEMPerCPU = 0.0;
+    double avgMEMPerCPU;
     private Address self;
     private RmConfiguration configuration;
     Random random;
     private AvailableResources availableResources;
-    
+    private RunTimeStatistics stat = new RunTimeStatistics();
+            
     Comparator<PeerDescriptor> peerAgeComparator = new Comparator<PeerDescriptor>() {
         @Override
         public int compare(PeerDescriptor t, PeerDescriptor t1) {
@@ -76,7 +81,6 @@ public final class ResourceManager extends ComponentDefinition {
     };
 
     public ResourceManager() {
-
         subscribe(handleInit, control);
         subscribe(handleRequestResource, indexPort);
 //Legacy        subscribe(handleUpdateTimeout, timerPort);
@@ -103,7 +107,8 @@ public final class ResourceManager extends ComponentDefinition {
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
             rst.setTimeoutEvent(new UpdateTimeout(rst));
             trigger(rst, timerPort);
-            currId = Integer.MIN_VALUE+1;
+            currId = MSG_ID_START_VALUE;
+            avgMEMPerCPU = 0.0;
         }
     };
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
@@ -124,14 +129,12 @@ public final class ResourceManager extends ComponentDefinition {
             RequestResources.Response best = rh.isBestAndLastResponse(event);
             if (best != null) {
                 if(best.isAvailable()){
-                RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
                 trigger(allocate, networkPort);
-                
-                //TODO: Add Statistics
                 
                 requestResourceResponses.remove(event.getId());
             }else{
-                sendSearchRequestsToNeighbour(best.getSource(),rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(),rh.isCPUMsg());
+                sendSearchRequestsToNeighbour(best.getSource(),rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(),rh.isCPUMsg(),rh.getTimeCreatedAt());
             }
                 requestResourceResponses.remove(event.getId());
             }
@@ -154,6 +157,8 @@ public final class ResourceManager extends ComponentDefinition {
                 UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
                 trigger(uar, cyclonUarPort);
                 trigger(uar, tmanUarPort);
+                double timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
+                stat.addAllocationTime(timeToSchedule,self.getId());
             }
         }
     };
@@ -163,14 +168,14 @@ public final class ResourceManager extends ComponentDefinition {
 
             System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // Ask for resources from neighbours by sending a ResourceRequest
-            
+            double currTime= getSystemTime();
             boolean useCPUGradient;
             try{
                 useCPUGradient = (event.getMemoryInMbs() / event.getNumCpus()) >= avgMEMPerCPU;
             }catch(ArithmeticException ae){
                 useCPUGradient = false;
             }
-            sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient);
+            sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient,currTime);
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
@@ -212,6 +217,7 @@ public final class ResourceManager extends ComponentDefinition {
                     ScheduleTimeout st = new ScheduleTimeout(first.getTime());
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
+                    stat.addAllocationTime(getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()),self.getId());
                 }
             }
         }
@@ -224,12 +230,13 @@ public final class ResourceManager extends ComponentDefinition {
                 RequestResources.Response bestResp = rh.getBestResponse();
                 if (bestResp != null) {
                     if(bestResp.isAvailable()){
-                        RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime());
+                        RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
                         trigger(allocate, networkPort);
                         requestResourceResponses.remove(e.getId());
                     }
                     else{
-                        sendSearchRequestsToNeighbour(bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(), rh.isCPUMsg());
+                        
+                        sendSearchRequestsToNeighbour(bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(),rh.getTime(), rh.isCPUMsg(),rh.getTimeCreatedAt());
                     }
                 } 
                 else {//Else we resend to another random sample of nodes
@@ -240,7 +247,7 @@ public final class ResourceManager extends ComponentDefinition {
                     } catch(ArithmeticException ae){
                         useCPUGradient = false;
                     }
-                    sendRequestsToRandomNeighbourSet(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),useCPUGradient);
+                    sendRequestsToRandomNeighbourSet(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),useCPUGradient,rh.getTimeCreatedAt());
                 }
                 requestResourceResponses.remove(e.getId());
             }
@@ -254,12 +261,13 @@ public final class ResourceManager extends ComponentDefinition {
             BestSearchResponse bsr = searchResponses.get(e.getId());
             if (bsr != null) {
             if(bsr.getBestResponse()!=null){
-                RequestResources.Allocate a = new RequestResources.Allocate(self, bsr.getBestResponse().getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime());
+                RequestResources.Allocate a = new RequestResources.Allocate(self, bsr.getBestResponse().getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(), bsr.getTimeCreatedAt());
                 trigger(a, networkPort);
                 searchResponses.remove(e.getId());
             }
             else{
-                sendRequestsToRandomNeighbourSet(bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.isCpuMsg());
+                //Resend the messdage to random neigbours
+                sendRequestsToRandomNeighbourSet(bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.isCpuMsg(),bsr.getTimeCreatedAt());
             }
             }
         }
@@ -270,12 +278,13 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(SearchResourceMsg.Request event) {
             Address bestNeighbour;
-            if (event.isCpuMsg()) {
-                bestNeighbour = neighboursCPU.get(random.nextInt(neighboursCPU.size())).getAddress();
-            } else {
-                bestNeighbour = neighboursMEM.get(random.nextInt(neighboursMEM.size())).getAddress();
-            }
-            
+                if (event.isCpuMsg() && !neighboursCPU.isEmpty()) {
+                    bestNeighbour = neighboursCPU.get(first).getAddress();
+                } else if(!event.isCpuMsg() && !neighboursMEM.isEmpty()){
+                    bestNeighbour = neighboursMEM.get(first).getAddress();
+                } else{
+                    bestNeighbour = self;
+                }
             SearchResourceMsg.Response response = new SearchResourceMsg.Response(self, event.getSource(),bestNeighbour,availableResources, event.getMsgId());
             trigger(response, networkPort);
         }
@@ -285,13 +294,21 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(SearchResourceMsg.Response event) {
             BestSearchResponse bsr = searchResponses.get(event.getMsgId());
-            
+            if(bsr == null){
+                return;
+            }
             if (event.getAskedNodesResources().isAvailable(bsr.getNumCpus(), bsr.getAmountMemInMb())) {
-                RequestResources.Allocate allocate = new RequestResources.Allocate(self, event.getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime());
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, event.getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.getTimeCreatedAt());
                 trigger(allocate, networkPort);
                 searchResponses.remove(event.getMsgId());
-            } else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() <= event.getAskedNodesResources().getQueueLength()) {
-                RequestResources.Allocate allocate = new RequestResources.Allocate(self, bsr.getBestResponse().getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime());
+            }
+            else if(bsr.getBestResponse() == null){//If we havent received a responce earlier
+                bsr.replaceBestResponse(event);
+                System.out.print("Bestresponce is Null :(");
+                sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
+            }
+            else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() <= event.getAskedNodesResources().getQueueLength()) {
+                RequestResources.Allocate allocate = new RequestResources.Allocate(self, bsr.getBestResponse().getSource(), bsr.getNumCpus(), bsr.getAmountMemInMb(), bsr.getTime(),bsr.getTimeCreatedAt());
                 trigger(allocate, networkPort);
                 searchResponses.remove(event.getMsgId());
             } else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() > event.getAskedNodesResources().getQueueLength()) {
@@ -299,29 +316,29 @@ public final class ResourceManager extends ComponentDefinition {
             }
             
         }
-    };
+    };         
     
-     int getNextMsgId(){
+     private int getNextMsgId(){
          try{
              return currId++;
          }catch(Exception e){
-             return currId = Integer.MIN_VALUE+1;
+             return currId = MSG_ID_START_VALUE;
          }
      }
      
-     private void sendRequestsToRandomNeighbourSet(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU) {
+     private void sendRequestsToRandomNeighbourSet(int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, double startTime) {
         ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(isCPU ? neighboursCPU : neighboursMEM);
         int amountOfProbes = tempNeigh.size() > MAX_NUM_PROBES ? MAX_NUM_PROBES : tempNeigh.size();
         
         //If no neighbours we alocate it to ou self
         if (amountOfProbes == 0) {
-            RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource);
+            RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource, startTime);
             trigger(allocate, networkPort);
         } 
         
         //Else we select 4>x>0 neighbours and aske them if they can allocate the amount
         else {
-            requestResourceResponses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,isCPU));
+            requestResourceResponses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,isCPU, startTime));
             int id = getNextMsgId();
             for (int i = 0; i < amountOfProbes; i++) {
                 PeerDescriptor dest = tempNeigh.remove(random.nextInt(tempNeigh.size()));
@@ -333,21 +350,22 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(st, timerPort);
         }
     }
-    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU){
-        sendSearchRequestsToNeighbour(dest,numCpus,memoryInMb,timeToHoldResource,isCPU,EMPTY_INDEX);
+    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU,double createdAt){
+        sendSearchRequestsToNeighbour(dest,numCpus,memoryInMb,timeToHoldResource,isCPU,EMPTY_INDEX,createdAt);
     }     
-    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, int previousMsgId) {
+    private void sendSearchRequestsToNeighbour(Address dest,int numCpus, int memoryInMb, int timeToHoldResource, boolean isCPU, int previousMsgId, double createdAt) {
         //If we dont have any neighbours we allocate task to our self
-        if ((isCPU && neighboursCPU.size()==0) || (!isCPU && neighboursMEM.size()==0)) {
-            RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource);
+        if ((isCPU && neighboursCPU.isEmpty()) || (!isCPU && neighboursMEM.isEmpty())) {
+            RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, numCpus, memoryInMb, timeToHoldResource,createdAt);
             trigger(allocate, networkPort);
         } 
         else {
-            if (searchResponses.get(previousMsgId) != null) {
-                searchResponses.put(getNextMsgId(), new BestSearchResponse(numCpus, memoryInMb, timeToHoldResource, isCPU, searchResponses.get(previousMsgId).getBestResponse()));
+            BestSearchResponse bsr = searchResponses.get(previousMsgId);
+            if (bsr != null) {
+                searchResponses.put(getNextMsgId(), new BestSearchResponse(numCpus, memoryInMb, timeToHoldResource, isCPU, bsr.getBestResponse(),bsr.getTimeCreatedAt()));
                 searchResponses.remove(previousMsgId);
             } else {
-                searchResponses.put(getNextMsgId(), new BestSearchResponse(numCpus, memoryInMb, timeToHoldResource, isCPU, null));
+                searchResponses.put(getNextMsgId(), new BestSearchResponse(numCpus, memoryInMb, timeToHoldResource, isCPU, null,createdAt));
             }
             
             SearchResourceMsg.Request req = new SearchResourceMsg.Request(self, dest, isCPU, currId);
@@ -378,5 +396,12 @@ public final class ResourceManager extends ComponentDefinition {
             }          
         } 
         return output;
+    }
+    
+    private double getSystemTime(){
+        return System.currentTimeMillis();
+    }
+    private double getTimeElapsedUntilNowFrom(double from){
+        return from - System.currentTimeMillis();
     }
 }

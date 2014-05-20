@@ -1,8 +1,15 @@
 
 package common.peer;
 
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An example class of implementation of statistics into the project
@@ -27,8 +34,24 @@ public class RunTimeStatistics {
             }
         };
     }
-    public void addAllocationTime(Double time){
+    public void addAllocationTime(Double time,int nodeName){
         allocationTimes.addData(time);
+        int j=0;
+        try {
+            PrintWriter writer = new PrintWriter("testStat"+nodeName+".tst","UTF-8");
+            for(double d : get99thPercentileAllocationTimes()){
+                writer.print(d+", ");
+                if (j++ > 10)
+                    writer.println("");
+            }
+            writer.flush();
+            writer.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
     public void addSearchTime(Double time){
         allocationTimes.addData(time);
