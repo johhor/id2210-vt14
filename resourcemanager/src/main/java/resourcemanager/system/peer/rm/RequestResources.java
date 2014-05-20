@@ -77,15 +77,18 @@ public class RequestResources  {
         private final int numCpus;
         private final int amountMemInMb;
         private final int time;
-        
-        public Allocate(Address src, Address dest ,int numCpus, int amountMemInMb, int time) {
+        private final long timeCreatedAt;
+
+        public Allocate(Address src, Address dest ,int numCpus, int amountMemInMb, int time, long createdAt) {
             super(src, dest);
             this.numCpus = numCpus;
             this.amountMemInMb = amountMemInMb;
             this.time = time;
+            timeCreatedAt = createdAt;
         }
 
-        public int getNumCpus() {
+
+		public int getNumCpus() {
             return numCpus;
         }
         public int getAmountMemInMb() {
@@ -94,5 +97,8 @@ public class RequestResources  {
         public int getTime() {
             return time;
         }
+        public long getTimeCreatedAt() {
+			return timeCreatedAt;
+		}
     }
 }

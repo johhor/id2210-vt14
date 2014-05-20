@@ -14,18 +14,20 @@ public class RequestHandler {
     private final int numCpus;
     private final int amountMemInMb;
     private final int time;
-    
+    private final long timeCreatedAt;
     int waitingNumRes;
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time) {
+    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, long createdAt) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
         this.time =time;
+        timeCreatedAt = createdAt;
     }
     
-    public RequestResources.Response isBestResponse(RequestResources.Response response) {
+
+	public RequestResources.Response isBestResponse(RequestResources.Response response) {
         waitingNumRes--;
         if (bestResponse == null) {
             bestResponse = response;
@@ -52,4 +54,7 @@ public class RequestHandler {
     public int getTime() {
         return time;
     }
+    public long getTimeCreatedAt() {
+		return timeCreatedAt;
+	}
 }
