@@ -53,7 +53,7 @@ public class Scenario2 extends Scenario {
 			raise(1, Operations.terminate);
 		}};
 
-                //terminateProcess.startAfterTerminationOf(100*1000, process1);
+                terminateProcess.startAfterTerminationOf(100*10000*2, process1);
 	}};
 
 	// -------------------------------------------------------------------
