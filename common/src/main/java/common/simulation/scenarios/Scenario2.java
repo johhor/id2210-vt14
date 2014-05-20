@@ -5,7 +5,7 @@ import se.sics.kompics.p2p.experiment.dsl.SimulationScenario;
 
 @SuppressWarnings("serial")
 public class Scenario2 extends Scenario {
-    static final int NUM_REQUESTING_PROCESSES = 100;
+    static final int NUM_REQUESTING_PROCESSES = 10;
     
 	private static SimulationScenario scenario = new SimulationScenario() {{
             
@@ -24,7 +24,7 @@ public class Scenario2 extends Scenario {
 			raise(100, Operations.requestResources(), 
                                 uniform(0, Integer.MAX_VALUE),
                                 constant(2), constant(2000),
-                                constant(1000*60*1) // 1 minute
+                                constant(10*60*1) // 1 minute
                                 );
 		}};
                 process1.startAfterTerminationOf(2000, process0);

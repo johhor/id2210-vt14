@@ -22,17 +22,12 @@ import java.util.logging.Logger;
 public class RunTimeStatistics {
     private StatisticsSet<Double> allocationTimes;
     private StatisticsSet<Double> searchTimes;
-    private PrintWriter writer;
-    
+    private int nodeName;
     public RunTimeStatistics(int nodeName){
         Comparator<Double> comp = createComparator();
         allocationTimes = new StatisticsSet<Double>(comp);
         searchTimes = new StatisticsSet<Double>(comp);
-        try {
-            writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
-        } catch (IOException ex) {
-            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        this.nodeName = nodeName;
     }
     
     public Comparator<Double> createComparator(){
@@ -43,18 +38,28 @@ public class RunTimeStatistics {
             }
         };
     }
+    private int j=0;
     public void addAllocationTime(Double time){
         allocationTimes.addData(time);
-        int j=0;
-            for(double d : get99thPercentileAllocationTimes()){
-                writer.print(d+", ");
-                if (j++ > 10)
+        
+        try {
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
+            //for(double d : get99thPercentileAllocationTimes()){
+                writer.print(time+", ");
+                if (j++ > 10) {
+                    j=0;
                     writer.println("");
-            }
-    }
-    public void closeWriter(){
+                }
+                    
+            //}
             writer.flush();
             writer.close();
+        } catch (IOException ex) {
+            Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
+        }  
+    }
+    public void closeWriter(){
+            
     }
     public void addSearchTime(Double time){
         allocationTimes.addData(time);

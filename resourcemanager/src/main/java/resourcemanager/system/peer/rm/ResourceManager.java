@@ -153,6 +153,7 @@ public final class ResourceManager extends ComponentDefinition {
                 availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
                 ScheduleTimeout st = new ScheduleTimeout(event.getTime());
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
+                System.out.println("trigger timer, client: "+self.getId());
                 trigger(st, timerPort);
                 availableResources.setQueueLength(taskQueue.size());
                 UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
@@ -211,6 +212,7 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(TaskFinished tf) {
             availableResources.release(tf.getNumCpus(), tf.getAmountMemInMb());
+            System.out.println("Task finished, client: "+self.getId());
             if (!taskQueue.isEmpty()) {
                 RequestResources.Allocate first = taskQueue.get(0);
                 if (availableResources.allocate(first.getNumCpus(), first.getAmountMemInMb())) {
@@ -305,7 +307,7 @@ public final class ResourceManager extends ComponentDefinition {
             }
             else if(bsr.getBestResponse() == null){//If we havent received a responce earlier
                 bsr.replaceBestResponse(event);
-                System.out.println("Best response is Null :(");
+                //System.out.println("Best response is Null :(");
                 sendSearchRequestsToNeighbour(event.getNextNode(), bsr.getNumCpus(), bsr.getAmountMemInMb(),bsr.getTime(), bsr.isCpuMsg(), event.getMsgId());
             }
             else if (bsr.getBestResponse().getAskedNodesResources().getQueueLength() <= event.getAskedNodesResources().getQueueLength()) {

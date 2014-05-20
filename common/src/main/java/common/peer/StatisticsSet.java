@@ -31,7 +31,7 @@ public class StatisticsSet<T> {
         if(startIndex == statisticsList.size())
             startIndex = statisticsList.size() - 1;
         
-        System.out.println("Startindex is:"+startIndex + " and size is: "+ statisticsList.size());
+        //System.out.println("Startindex is:"+startIndex + " and size is: "+ statisticsList.size());
         return new ArrayList<T>(statisticsList.subList(startIndex, statisticsList.size()));
     }
     
