@@ -18,23 +18,19 @@ public class Scenario2 extends Scenario {
 							constant(12000));
 				}
 			};
-			process0.start();
 
 			SimulationScenario.StochasticProcess process1 = null;
 
-			for (int i = 0; i < NUM_REQUESTING_PROCESSES; i++) {
-				process1 = new SimulationScenario.StochasticProcess() {
-					{
-						eventInterArrivalTime(constant(100));
-						raise(4, Operations.requestResources(),
-								uniform(0, Integer.MAX_VALUE), constant(2),
-								constant(2000), constant(10 * 60 * 1) // 1
-																		// minute
-						);
-					}
-				};
-				process1.startAfterTerminationOf(2000, process0);
-			}
+			process1 = new SimulationScenario.StochasticProcess() {
+				{
+					eventInterArrivalTime(constant(100));
+					raise(20, Operations.requestResources(),
+							uniform(0, Integer.MAX_VALUE), constant(2),
+							constant(2000), constant(10 * 60 * 1) // 1
+																	// minute
+					);
+				}
+			};
 
 			SimulationScenario.StochasticProcess failPeersProcess = new SimulationScenario.StochasticProcess() {
 				{
@@ -50,9 +46,10 @@ public class Scenario2 extends Scenario {
 					raise(1, Operations.terminate);
 				}
 			};
-			if (process1 != null)
-				terminateProcess.startAfterTerminationOf(100 * 10000 * 2,
-						process1);
+			
+			process0.start();
+			process1.startAfterTerminationOf(2000, process0);
+			terminateProcess.startAfterTerminationOf(2000, process1);
 		}
 	};
 
