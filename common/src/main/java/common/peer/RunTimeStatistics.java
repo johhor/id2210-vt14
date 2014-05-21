@@ -46,7 +46,7 @@ public class RunTimeStatistics {
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
             //for(double d : get99thPercentileAllocationTimes()){
                 writer.print(time+", ");
-                if (j++ > 10) {
+                if (++j > 9) {
                     j=0;
                     writer.println("");
                 }
