@@ -38,6 +38,7 @@ public class RunTimeStatistics {
             }
         };
     }
+    private int t = 0;
     private int j=0;
     public void addAllocationTime(long time){
         allocationTimes.addData(time);
@@ -45,7 +46,7 @@ public class RunTimeStatistics {
         try {
             PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
             //for(double d : get99thPercentileAllocationTimes()){
-                writer.print(time+", ");
+                writer.print("["+(++t)+"]"+time+", ");
                 if (++j > 9) {
                     j=0;
                     writer.println("");

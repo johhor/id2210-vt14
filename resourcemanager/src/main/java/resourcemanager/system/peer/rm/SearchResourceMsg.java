@@ -50,7 +50,7 @@ public class SearchResourceMsg {
             return nextNode;
         }
 
-        public AvailableResources getAskedNodesResources() {
+        public AvailableResources getNodesResources() {
             return askedNodesResources;
         }      
 

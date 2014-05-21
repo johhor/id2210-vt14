@@ -29,7 +29,7 @@ public class RequestHandler {
         timeCreatedAt = currTime;
     }
     
-    public RequestResources.Response isBestAndLastResponse(RequestResources.Response response) {
+    public RequestResources.Response bestAndAllReceived(RequestResources.Response response) {
         waitingNumRes--;
         if (bestResponse == null) {
             bestResponse = response;

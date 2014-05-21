@@ -23,8 +23,8 @@ public class Scenario2 extends Scenario {
 
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(100));
-					raise(20, Operations.requestResources(),
+					eventInterArrivalTime(constant(25));
+					raise(200, Operations.requestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(2),
 							constant(2000), constant(10 * 60 * 1) // 1
 																	// minute
@@ -49,7 +49,7 @@ public class Scenario2 extends Scenario {
 			
 			process0.start();
 			process1.startAfterTerminationOf(2000, process0);
-			terminateProcess.startAfterTerminationOf(2000, process1);
+			terminateProcess.startAfterTerminationOf(10000, process1);
 		}
 	};
 
