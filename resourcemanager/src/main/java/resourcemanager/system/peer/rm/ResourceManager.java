@@ -175,7 +175,13 @@ public final class ResourceManager extends ComponentDefinition {
             }catch(ArithmeticException ae){
                 useCPUGradient = false;
             }
-            sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient,getSystemTime());
+            
+            if (availableResources.isAvailable(event.getNumCpus(), event.getMemoryInMbs())) {
+            	RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
+                trigger(allocate, networkPort);
+            } else {
+            	sendRequestsToRandomNeighbourSet(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),useCPUGradient,getSystemTime());
+            }
         }
     };
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
