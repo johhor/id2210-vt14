@@ -25,6 +25,7 @@ import common.configuration.Configuration;
 import common.configuration.CyclonConfiguration;
 import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
+import common.simulation.BatchRequestResource;
 import common.simulation.ConsistentHashtable;
 import common.simulation.GenerateReport;
 import common.simulation.PeerFail;
@@ -65,6 +66,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
         subscribe(handlePeerFail, simulator);
         subscribe(handleTerminateExperiment, simulator);
         subscribe(handleRequestResource, simulator);
+        subscribe(handleBatchRequestResource, simulator);
     }
 	
     Handler<SimulatorInit> handleInit = new Handler<SimulatorInit>() {
@@ -91,6 +93,15 @@ public final class DataCenterSimulator extends ComponentDefinition {
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
+            Long successor = ringNodes.getNode(event.getId());
+            Component peer = peers.get(successor);
+            trigger( event, peer.getNegative(RmPort.class));
+        }
+    };
+    
+    Handler<BatchRequestResource> handleBatchRequestResource = new Handler<BatchRequestResource>() {
+        @Override
+        public void handle(BatchRequestResource event) {
             Long successor = ringNodes.getNode(event.getId());
             Component peer = peers.get(successor);
             trigger( event, peer.getNegative(RmPort.class));

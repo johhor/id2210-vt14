@@ -6,6 +6,8 @@
 
 package resourcemanager.system.peer.rm;
 
+import org.mortbay.jetty.handler.ResourceHandler;
+
 /**
  *
  * @author Linus
@@ -41,7 +43,10 @@ public class RequestHandler {
             return bestResponse;
         return null;
     }
-
+	
+	public boolean isBatch(){
+		return false;
+	}
     public RequestResources.Response getBestResponse() {
         return bestResponse;
     }

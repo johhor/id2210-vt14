@@ -2,6 +2,7 @@ package main;
 
 import simulator.core.DataCenterSimulationMain;
 import common.configuration.Configuration;
+import common.simulation.scenarios.BatchScenario;
 import common.simulation.scenarios.Scenario;
 import common.simulation.scenarios.Scenario1;
 import common.simulation.scenarios.Scenario2;
@@ -13,7 +14,7 @@ public class Main {
         long seed = System.currentTimeMillis();
         Configuration configuration = new Configuration(seed);
 
-        Scenario scenario = new Scenario2();
+        Scenario scenario = new BatchScenario();
         scenario.setSeed(seed);
         scenario.getScenario().simulate(DataCenterSimulationMain.class);
     }

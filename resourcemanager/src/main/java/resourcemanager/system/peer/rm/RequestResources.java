@@ -38,7 +38,7 @@ public class RequestResources  {
     }
     
     public static class Response extends Message {
-        private final int queueSize;
+        private int queueSize;
         private final boolean success;
         private  final  int id;
         public Response(Address source, Address destination, boolean success, int queueSize, int id) {
@@ -58,7 +58,9 @@ public class RequestResources  {
         public int getId(){
             return id;
         }
-        
+        public void incrementQueueSize(){
+        	queueSize++;
+        }
     }
     
     public static class RequestTimeout extends Timeout {
