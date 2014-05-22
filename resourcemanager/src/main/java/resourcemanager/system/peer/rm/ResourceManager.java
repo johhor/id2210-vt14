@@ -283,6 +283,8 @@ public final class ResourceManager extends ComponentDefinition {
     };
     private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource,long requestedAt) {
     	ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
+    	int amountOfProbes = getAmountOfProbes(tempNeigh.size());
+    	responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,requestedAt));
     	sendRequestsToNeighboursRound(tempNeigh,numCpus, memoryInMb, timeToHoldResource,requestedAt);
     	if(getAmountOfProbes(tempNeigh.size())>0){
             ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
@@ -299,7 +301,6 @@ public final class ResourceManager extends ComponentDefinition {
                 trigger(allocate, networkPort);
         } 
         else {
-            responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,requestedAt));
             for (int i = 0; i < amountOfProbes; i++) {
                 Address dest = tempNeigh.remove(random.nextInt(tempNeigh.size()));
                 RequestResources.Request req = new RequestResources.Request(self, dest, numCpus, memoryInMb,currId);

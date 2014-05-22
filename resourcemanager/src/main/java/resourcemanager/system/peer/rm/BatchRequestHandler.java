@@ -21,7 +21,7 @@ public class BatchRequestHandler extends RequestHandler{
 	public BatchRequestHandler(int numRespToWaitOn, BatchRequestResource brr, long timeStartedAt){
 		super(numRespToWaitOn,brr.getNumCpus(),brr.getMemoryInMbs(),brr.getTimeToHoldResource(),timeStartedAt);
 		selectedNodes = new ArrayList<Address>();
-		ArrayList<Address> busyList;
+		busyList = new ArrayList<RequestResources.Response>();
 		numMachines = brr.getNumMachines();
 	}
 	@Override
@@ -51,8 +51,9 @@ public class BatchRequestHandler extends RequestHandler{
 	}
 	public 	ArrayList<Address> getNodes(){
 		ArrayList<Address> nodes = new ArrayList<Address>(numMachines);
-		for(Address a : selectedNodes)
+		for(Address a : selectedNodes) {
 			nodes.add(a);
+		}
 		
 		int resOfAddresses = numMachines - selectedNodes.size();
 		ArrayList<Address> rest = getRestFromBadList();
