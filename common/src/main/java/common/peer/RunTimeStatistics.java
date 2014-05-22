@@ -2,13 +2,9 @@
 package common.peer;
 
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.logging.Level;
@@ -44,15 +40,12 @@ public class RunTimeStatistics {
         allocationTimes.addData(time);
         
         try {
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+nodeName+".tst",true)));
-            //for(double d : get99thPercentileAllocationTimes()){
-                writer.print("["+(++t)+"]"+time+", ");
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+".tst",true)));
+                writer.print(time+", ");//"["+(++t)+"]"+time+", ");
                 if (++j > 9) {
                     j=0;
                     writer.println("");
                 }
-                    
-            //}
             writer.flush();
             writer.close();
         } catch (IOException ex) {

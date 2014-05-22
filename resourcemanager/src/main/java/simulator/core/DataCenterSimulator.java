@@ -1,8 +1,22 @@
 package simulator.core;
 
+import common.configuration.Configuration;
+import common.configuration.CyclonConfiguration;
+import common.configuration.RmConfiguration;
+import common.configuration.TManConfiguration;
+import common.peer.AvailableResources;
+import common.simulation.BatchRequestResource;
+import common.simulation.ConsistentHashtable;
+import common.simulation.GenerateReport;
+import common.simulation.PeerFail;
+import common.simulation.PeerJoin;
+import common.simulation.RequestResource;
+import common.simulation.SimulatorInit;
 import common.simulation.SimulatorPort;
+import java.net.InetAddress;
 import java.util.HashMap;
-
+import java.util.Random;
+import se.sics.ipasdistances.AsIpGenerator;
 import se.sics.kompics.ChannelFilter;
 import se.sics.kompics.Component;
 import se.sics.kompics.ComponentDefinition;
@@ -14,28 +28,13 @@ import se.sics.kompics.address.Address;
 import se.sics.kompics.network.Message;
 import se.sics.kompics.network.Network;
 import se.sics.kompics.p2p.bootstrap.BootstrapConfiguration;
+import se.sics.kompics.p2p.experiment.dsl.events.TerminateExperiment;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.Timer;
-
+import simulator.snapshot.Snapshot;
 import system.peer.Peer;
 import system.peer.PeerInit;
-import simulator.snapshot.Snapshot;
-import common.configuration.RmConfiguration;
-import common.configuration.Configuration;
-import common.configuration.CyclonConfiguration;
-import common.configuration.TManConfiguration;
-import common.peer.AvailableResources;
-import common.simulation.ConsistentHashtable;
-import common.simulation.GenerateReport;
-import common.simulation.PeerFail;
-import common.simulation.PeerJoin;
-import common.simulation.RequestResource;
-import common.simulation.SimulatorInit;
-import java.net.InetAddress;
-import java.util.Random;
-import se.sics.ipasdistances.AsIpGenerator;
 import system.peer.RmPort;
-import se.sics.kompics.p2p.experiment.dsl.events.TerminateExperiment;
 
 public final class DataCenterSimulator extends ComponentDefinition {
 
@@ -65,6 +64,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
         subscribe(handlePeerFail, simulator);
         subscribe(handleTerminateExperiment, simulator);
         subscribe(handleRequestResource, simulator);
+        subscribe(handleBatchRequestResource, simulator);
     }
 	
     Handler<SimulatorInit> handleInit = new Handler<SimulatorInit>() {
@@ -96,7 +96,14 @@ public final class DataCenterSimulator extends ComponentDefinition {
             trigger( event, peer.getNegative(RmPort.class));
         }
     };
-	
+    Handler<BatchRequestResource> handleBatchRequestResource = new Handler<BatchRequestResource>() {
+        @Override
+        public void handle(BatchRequestResource event) {
+            Long successor = ringNodes.getNode(event.getId());
+            Component peer = peers.get(successor);
+            trigger( event, peer.getNegative(RmPort.class));
+        }
+    };	
     Handler<PeerJoin> handlePeerJoin = new Handler<PeerJoin>() {
         @Override
         public void handle(PeerJoin event) {
