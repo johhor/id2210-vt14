@@ -101,12 +101,12 @@ public class BatchRequestHandler extends RequestHandler{
 	private Address removeBestFromList(ArrayList<RequestResources.Response> rest){
 		Comparator<RequestResources.Response> comp = getComp();
 		Collections.sort(rest, comp);
-		return rest.remove(0).getDestination();
+		return rest.remove(0).getSource();
 	}
 	private Address getBestFromList(ArrayList<RequestResources.Response> rest){
 		Comparator<RequestResources.Response> comp = getComp();
 		Collections.sort(rest, comp);
-		return rest.get(0).getDestination();
+		return rest.get(0).getSource();
 	}
 	private void updateBusyList(ArrayList<RequestResources.Response> list, Address a){
 		for (int i = 0; i < list.size(); i++) {
