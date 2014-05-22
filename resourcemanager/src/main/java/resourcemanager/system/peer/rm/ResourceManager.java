@@ -5,6 +5,7 @@ import common.peer.AvailableResources;
 import common.peer.RunTimeStatistics;
 import common.simulation.RequestResource;
 import common.peer.UpdateAvailableResources;
+import common.simulation.BatchRequestResource;
 import cyclon.system.peer.cyclon.CyclonPort;
 import cyclon.system.peer.cyclon.PeerDescriptor;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import tman.system.peer.tman.TManSample;
 import tman.system.peer.tman.TManSamplePort;
 import tman.system.peer.tman.TManUpdateAvailableResourcesPort;
 import cyclon.system.peer.cyclon.CyclonUpdateAvailableResourcesPort;
+import se.sics.kompics.timer.Timeout;
 
 /**
  * Should have some comments here.
@@ -62,7 +64,7 @@ public final class ResourceManager extends ComponentDefinition {
 
     private int currId;
     
-    private double avgMEMPerCPU;
+    private double avgMemPerCpu;
     private Address self;
     private RmConfiguration configuration;
     Random random;
@@ -108,7 +110,7 @@ public final class ResourceManager extends ComponentDefinition {
             rst.setTimeoutEvent(new UpdateTimeout(rst));
             trigger(rst, timerPort);
             currId = MSG_ID_START_VALUE;
-            avgMEMPerCPU = 0.0;
+            avgMemPerCpu = 0.0;
             stat = new RunTimeStatistics(self.getId());
         }
     };
@@ -147,23 +149,18 @@ public final class ResourceManager extends ComponentDefinition {
             boolean isAvalible = availableResources.isAvailable(event.getNumCpus(), event.getAmountMemInMb());
             if (!isAvalible) {
                 taskQueue.add(event);
-                availableResources.setQueueLength(taskQueue.size());
+                updateAvailableResourses();
             } else {
                 availableResources.allocate(event.getNumCpus(), event.getAmountMemInMb());
+                updateAvailableResourses();
                 ScheduleTimeout st = new ScheduleTimeout(event.getTime());
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
-                System.out.println("trigger timer, client: "+self.getId());
                 trigger(st, timerPort);
-                availableResources.setQueueLength(taskQueue.size());
-                UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
-                trigger(uar, cyclonUarPort);
-                trigger(uar, tmanUarPort);
                 long timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
                 stat.addAllocationTime(timeToSchedule);
             }
         }
     };
-
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
@@ -171,11 +168,10 @@ public final class ResourceManager extends ComponentDefinition {
             // Ask for resources from neighbours by sending a ResourceRequest
             boolean useCPUGradient;
             try{
-                useCPUGradient = (event.getMemoryInMbs() / event.getNumCpus()) >= avgMEMPerCPU;
+                useCPUGradient = isCpuDominantResourse(event.getMemoryInMbs() , event.getNumCpus());
             }catch(ArithmeticException ae){
                 useCPUGradient = false;
             }
-            
             if (availableResources.isAvailable(event.getNumCpus(), event.getMemoryInMbs())) {
             	RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
                 trigger(allocate, networkPort);
@@ -184,6 +180,16 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
+    Handler<BatchRequestResource> handleBatchRequest = new Handler<BatchRequestResource>() {
+        @Override
+        public void handle(BatchRequestResource e) {
+            boolean isCpu = isCpuDominantResourse(e.getMemoryInMbs(),e.getNumCpus());
+            for(int i = 0; i < e.getNumMachines(); i++)
+                sendRequestsToRandomNeighbourSet(e.getNumCpus(), e.getMemoryInMbs(), e.getTimeToHoldResource(), isCpu, getSystemTime());
+        }
+    };
+    
+    
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
         @Override
         public void handle(TManSample event) {
@@ -206,9 +212,9 @@ public final class ResourceManager extends ComponentDefinition {
             }
             //Sets limit of requests dominant resource
             try{
-                avgMEMPerCPU = sumMEM / sumCPU;
+                avgMemPerCpu = sumMEM / sumCPU;
             }catch(ArithmeticException ae){
-                avgMEMPerCPU = Double.MAX_VALUE;
+                avgMemPerCpu = Double.MAX_VALUE;
             }
         }
     };
@@ -216,15 +222,11 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(TaskFinished tf) {
             availableResources.release(tf.getNumCpus(), tf.getAmountMemInMb());
-            System.out.println("Task finished, client: "+self.getId());
             if (!taskQueue.isEmpty()) {
                 RequestResources.Allocate first = taskQueue.get(0);
                 if (availableResources.allocate(first.getNumCpus(), first.getAmountMemInMb())) {
                     taskQueue.remove(0);
-                    availableResources.setQueueLength(taskQueue.size());
-                    UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
-                    trigger(uar, cyclonUarPort);
-                    trigger(uar, tmanUarPort);
+                    updateAvailableResourses();
                     ScheduleTimeout st = new ScheduleTimeout(first.getTime());
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
@@ -253,7 +255,7 @@ public final class ResourceManager extends ComponentDefinition {
                     boolean useCPUGradient;
                     try{
                         //IF event quote is smaller than average
-                        useCPUGradient = (rh.getAmountMemInMb()/rh.getNumCpus()) >= avgMEMPerCPU;
+                        useCPUGradient = isCpuDominantResourse(rh.getAmountMemInMb(),rh.getNumCpus());
                     } catch(ArithmeticException ae){
                         useCPUGradient = false;
                     }
@@ -323,7 +325,9 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
-    
+    private boolean isCpuDominantResourse(int mem, int cpu){
+        return (mem / cpu) < avgMemPerCpu;
+    }
     private int getNewMsgId(){
          try{
              return currId++;
@@ -358,6 +362,13 @@ public final class ResourceManager extends ComponentDefinition {
     
     private boolean isAlone(boolean isCPU){
         return (isCPU&& neighboursCPU.isEmpty()) || (!isCPU && neighboursMEM.isEmpty());
+    }
+    
+    private void updateAvailableResourses(){
+        availableResources.setQueueLength(taskQueue.size());
+        UpdateAvailableResources uar = new UpdateAvailableResources(availableResources);
+        trigger(uar, cyclonUarPort);
+        trigger(uar, tmanUarPort);
     }
     
     private void sendNextSearchRequestsToNeighbour(Address dest,BestSearchResponse bsr){
