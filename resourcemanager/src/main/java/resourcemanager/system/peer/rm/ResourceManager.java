@@ -142,7 +142,7 @@ public final class ResourceManager extends ComponentDefinition {
                 }
                 else if(brh.allResponsesReceived()){
                     brh.setSearching(true);
-                    sendFirstSearchRequestsToNeighbour(brh.getBestResponse(),brh);
+                    sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
                     requestResourceResponses.remove(event.getId());
                 }
             }
@@ -285,7 +285,7 @@ public final class ResourceManager extends ComponentDefinition {
                     }
                     else{
                         brh.setSearching(true);
-                        sendFirstSearchRequestsToNeighbour(brh.getBestResponse(),brh);
+                        sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
                     }
                     requestResourceResponses.remove(e.getId());
                 }
