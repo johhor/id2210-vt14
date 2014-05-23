@@ -144,20 +144,14 @@ public final class ResourceManager extends ComponentDefinition {
             	}
             }else if(rh.isBatch()){
             	BatchRequestHandler brh = (BatchRequestHandler)rh;
-            	brh.addResponce(event);
-            	if(brh.allResponsesReceived()){
+            	brh.tryAddResponce(event);
+            	if(brh.hasGoodAllocation()||brh.allResponsesReceived()){
             		for(Address a : brh.getNodes()){
             			RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
             			trigger(allocate, networkPort);
             		}
+                    responses.remove(event.getId());
             	}
-            	else if(brh.allMachinesCanBeAllocated()){
-            		for(Address a : brh.getNodes()){
-            			RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
-            			trigger(allocate, networkPort);
-            		}
-            	}
-            	
             }
         }
     };
@@ -259,23 +253,29 @@ public final class ResourceManager extends ComponentDefinition {
             	return;
             if(rh.isBatch()){
             	BatchRequestHandler brh = (BatchRequestHandler)rh;
-            	if(brh.isAllocatable()){
-            		for(Address a : brh.getNodes()){
-            			RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
-            			trigger(allocate, networkPort);
-            		}
-            	}
-            	else{	
-            	}
+                if(brh.getNumReceivedResponses()>0){
+                    for(Address a : brh.getNodes()){
+                        RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
+                        trigger(allocate, networkPort);
+                    }
+                }
+                else{
+                    //Worst case is that we dont have any responces, in which case we allocate it all on our self
+                    RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
+                    for (int i = 0; i < brh.getNumMachines; i++) {
+                        trigger(allocate, networkPort);
+                    }
+                }
+                responses.remove(e.getId());
             }
             else{
             	RequestResources.Response bestResp = rh.getBestResponse();
             	if (bestResp != null) {
-                	RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
-                	trigger(allocate, networkPort);
+                    RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                    trigger(allocate, networkPort);
             	} 
             	else {
-            		sendRequestsToNeighbours(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                    sendRequestsToNeighbours(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
             	}
             	responses.remove(e.getId());
             }

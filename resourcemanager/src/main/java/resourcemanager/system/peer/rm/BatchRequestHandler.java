@@ -17,38 +17,41 @@ public class BatchRequestHandler extends RequestHandler{
 	private ArrayList<RequestResources.Response> busyNodes;
 	
 	int numMachines;
+        private int numReceivedResponses;
 	
 	public BatchRequestHandler(int numRespToWaitOn, BatchRequestResource brr, long timeStartedAt){
 		super(numRespToWaitOn,brr.getNumCpus(),brr.getMemoryInMbs(),brr.getTimeToHoldResource(),timeStartedAt);
 		availableNodes = new ArrayList<Address>();
 		busyNodes = new ArrayList<RequestResources.Response>();
 		numMachines = brr.getNumMachines();
+                numReceivedResponses = 0;
 	}
 	@Override
 	public boolean isBatch(){
 		return true;
 	}
 	
-	public boolean allMachinesCanBeAllocated(){
-		return availableNodes.size()+busyNodes.size() >= waitingNumRes;
+	public boolean allResponsesReceived(){
+            return numReceivedResponses >= waitingNumRes;
 	}
-	public boolean isAllocatable() {
+	public boolean hasBadAllocation() {
 		return availableNodes.size()+ busyNodes.size()>= numMachines;
 	}
-	public boolean allResponsesReceived(){
+	public boolean hasGoodAllocation(){
 		return availableNodes.size()>= numMachines;
 	}
 	
-	public void addResponce(RequestResources.Response e){
-		boolean notInSelected = !availableNodes.contains(e.getSource());
-		//Only distinct allocatable  nodes without a queue are put in selected nodes
-		if(e.getQueueSize() == 0 && e.getSuccess() && notInSelected){
-			this.availableNodes.add(e.getSource());
-		}
-		else if (!busyNodes.contains(e) && notInSelected){
-			//Else we store them untill we have to use them with data to get best suited
-			busyNodes.add(e);
-		}
+	public void tryAddResponce(RequestResources.Response e){
+            boolean notInSelected = !availableNodes.contains(e.getSource());
+            numReceivedResponses++;
+            //Only distinct allocatable  nodes without a queue are put in selected nodes
+            if(e.getQueueSize() == 0 && e.getSuccess() && notInSelected){
+                this.availableNodes.add(e.getSource());
+            }
+            else if (!busyNodes.contains(e) && notInSelected){
+		//Else we store them untill we have to use them with data to get best suited
+		busyNodes.add(e);
+            }
 	}
 	
 	public 	ArrayList<Address> getNodes(){
