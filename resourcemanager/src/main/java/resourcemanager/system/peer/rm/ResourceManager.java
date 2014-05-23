@@ -262,13 +262,15 @@ public final class ResourceManager extends ComponentDefinition {
             availableResources.release(tf.getNumCpus(), tf.getAmountMemInMb());
             if (!taskQueue.isEmpty()) {
                 RequestResources.Allocate first = taskQueue.get(0);
-                if (availableResources.allocate(first.getNumCpus(), first.getAmountMemInMb())) {
+                while (availableResources.allocate(first.getNumCpus(), first.getAmountMemInMb())) {
                     taskQueue.remove(0);
                     updateAvailableResourses();
                     ScheduleTimeout st = new ScheduleTimeout(first.getTime());
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
                     stat.addAllocationTime(getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()));
+                    
+                    first = taskQueue.get(0);
                 }
             }
         }
@@ -285,30 +287,33 @@ public final class ResourceManager extends ComponentDefinition {
                     }
                     else{
                         brh.setSearching(true);
-                        sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
+                        if (brh.getBestResponse() != null) {
+                        	sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
+                        }
+                        else //allocate on self
+                        {
+                        	for (int i=0; i<brh.numMachines; i++) {
+                        		RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                                trigger(allocate, networkPort);
+                        	}
+                        }
                     }
-                    requestResourceResponses.remove(e.getId());
-                }
+                }else {
                 RequestResources.Response bestResp = rh.getBestResponse();
                 if (bestResp != null) {
                     if(bestResp.isAvailable()){
                         RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
                         trigger(allocate, networkPort);
-                        requestResourceResponses.remove(e.getId());
                     }
                     else{                        
                         sendFirstSearchRequestsToNeighbour(bestResp.getSource(), rh);
                     }
                 } 
-                else {//Else we resend to another random sample of nodes
-                    boolean useCPUGradient;
-                    try{
-                        //IF event quote is smaller than average
-                        useCPUGradient = isCpuDominantResourse(rh.getAmountMemInMb(),rh.getNumCpus());
-                    } catch(ArithmeticException ae){
-                        useCPUGradient = false;
-                    }
-                    sendRequestsToRandomNeighbourSet(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),useCPUGradient,rh.getTimeCreatedAt());
+                else {//Else we allocate on self
+                	RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                    trigger(allocate, networkPort);
+                }
+                
                 }
                 requestResourceResponses.remove(e.getId());
             }
