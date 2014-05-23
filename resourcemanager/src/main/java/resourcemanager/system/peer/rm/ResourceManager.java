@@ -126,6 +126,7 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(RequestResources.Response event) {
             RequestHandler rh = requestResourceResponses.get(event.getId());
             if (rh == null) {
+                Debuggln("Bollox, the rh / brh was already removed! >:(");
                 return;
             }
             if(rh.isBatch()){
@@ -210,10 +211,10 @@ public final class ResourceManager extends ComponentDefinition {
             int numRequests = getAmountOfProbes(tempNeigh.size())*e.getNumMachines();
             requestResourceResponses.put(msgID, new BatchRequestHandler(numRequests, e, isCpu, getSystemTime(), msgID));
             //Debugg("Number of requests: "+ numRequests);
-            int debuggLooP=0;
+            //int debuggLooP=0;
             for (int i = 0; i < e.getNumMachines(); i++){
                 sendRequestsToRandomNeighbourRound(msgID,tempNeigh,e.getNumCpus(), e.getMemoryInMbs(), e.getTimeToHoldResource(), isCpu,getSystemTime());
-                debuggLooP++;
+            //    debuggLooP++;
                 tempNeigh = new ArrayList<PeerDescriptor>(isCpu ? neighboursCPU : neighboursMEM);
             }            
             //Debuggln(" Amount of actual loopsteps: "+debuggLooP);
@@ -277,32 +278,37 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(RequestResources.RequestTimeout e) {
             RequestHandler rh = requestResourceResponses.get(e.getId());
-            if (rh != null) {
+            if (rh == null) {
+                return;
+            }
                 if(rh.isBatch()){
                     BatchRequestHandler brh = (BatchRequestHandler) rh;
                     if(brh.isSearching()){
+                        Debuggln("Batch request timed out when  searched, nothing happened :|");
                         return; // let the searchTimeout handle it
                     }
                     else{
+                        Debuggln("Batch request timed out when it wasnt searching.. that sucks :,(");
                         brh.setSearching(true);
                         if (brh.getBestResponse() != null) {
                         	sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
                         }
                         else //allocate on self
                         {
-                        	for (int i=0; i<brh.numMachines; i++) {
-                        		RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                            for (int i=0; i<brh.numMachines; i++) {
+                        	RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
                                 trigger(allocate, networkPort);
-                        	}
+                            }
                         }
                     }
-                }else {
-                RequestResources.Response bestResp = rh.getBestResponse();
-                if (bestResp != null) {
-                    if(bestResp.isAvailable()){
-                        RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
-                        trigger(allocate, networkPort);
-                    }
+                }
+                else {
+                    RequestResources.Response bestResp = rh.getBestResponse();
+                    if (bestResp != null) {
+                        if(bestResp.isAvailable()){
+                            RequestResources.Allocate allocate = new RequestResources.Allocate(self, bestResp.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+                            trigger(allocate, networkPort);
+                        }
                     else{                        
                         sendFirstSearchRequestsToNeighbour(bestResp.getSource(), rh);
                     }
@@ -314,7 +320,6 @@ public final class ResourceManager extends ComponentDefinition {
                 
                 }
                 requestResourceResponses.remove(e.getId());
-            }
         }
     };
     //If we didnt get a responce to our search in time
@@ -370,8 +375,9 @@ public final class ResourceManager extends ComponentDefinition {
             //If we get an avalible node from searching
             if (resp.getNodesResources().isAvailable(bsr.getNumCpus(), bsr.getAmountMemInMb())) {
                 if(bsr.isBatchSearch()){
+                    Debuggln("Got a good search responce, sending to my self =)");
                     //If it was a search for a batch request, we let the requestResource.Responce handle handle it
-                    boolean isAvalible = bsr.getNumCpus()>=resp.getNodesResources().getNumFreeCpus()&& bsr.getAmountMemInMb()>= resp.getNodesResources().getFreeMemInMbs()&&resp.getNodesResources().getQueueLength()==0;
+                    boolean isAvalible = resp.getNodesResources().isAvailable(bsr.getNumCpus(), bsr.getAmountMemInMb()) && resp.getNodesResources().getQueueLength()==0;
                     RequestResources.Response r = new RequestResources.Response(resp.getSource(),self,isAvalible, resp.getNodesResources().getQueueLength(), bsr.getBRH().getId());
                     trigger(r, networkPort);
                 }
