@@ -17,7 +17,7 @@ public class RequestHandler {
     private final boolean isCPUMsg;
     private int waitingNumRes;
     private long timeCreatedAt;
-    
+    boolean isBatch;
     RequestResources.Response bestResponse;
     
     public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long startTime) {
@@ -27,6 +27,7 @@ public class RequestHandler {
         this.time =time;
         isCPUMsg = isCPU;
         timeCreatedAt = startTime;
+        isBatch = false;
     }
     
     public RequestResources.Response bestAndAllReceived(RequestResources.Response response) {
@@ -44,7 +45,7 @@ public class RequestHandler {
         return null;
     }
     public boolean isBatch(){
-	return false;
+	return isBatch;
     }
     public RequestResources.Response getBestResponse() {
         return bestResponse;
@@ -64,9 +65,7 @@ public class RequestHandler {
     public long getTimeCreatedAt() {
         return timeCreatedAt;
     }
-
     public int getWaitingNumRes() {
         return waitingNumRes;
     }
-    
 }

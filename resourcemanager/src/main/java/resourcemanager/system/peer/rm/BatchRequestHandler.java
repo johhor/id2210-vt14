@@ -24,10 +24,7 @@ public class BatchRequestHandler extends RequestHandler{
                 numReceivedResponses = 0;
                 this.id = id;
                 searching = false;
-	}
-	@Override
-	public boolean isBatch(){
-		return true;
+                isBatch = true;
 	}
 	
 	public boolean allResponsesReceived(){

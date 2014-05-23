@@ -23,16 +23,17 @@ public class StatisticsSet<T> {
         return statisticsList;
     }
     
-    public ArrayList<T> get99thPercentile(){
+    public T get99thPercentile(){
         Collections.sort(statisticsList, comp);
         //95% of the list size
         double listSize = statisticsList.size();
         int startIndex = (int)Math.floor(listSize*0.99);
         if(startIndex == statisticsList.size())
             startIndex = statisticsList.size() - 1;
-        
+        if(startIndex < 0)
+            startIndex = 0;
         //System.out.println("Startindex is:"+startIndex + " and size is: "+ statisticsList.size());
-        return new ArrayList<T>(statisticsList.subList(startIndex, statisticsList.size()));
+        return new ArrayList<T>(statisticsList.subList(startIndex, statisticsList.size())).get(0);
     }
     
       /* Testing function for the percentile*/    

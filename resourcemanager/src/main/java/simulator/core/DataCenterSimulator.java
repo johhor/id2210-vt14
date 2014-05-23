@@ -5,6 +5,7 @@ import common.configuration.CyclonConfiguration;
 import common.configuration.RmConfiguration;
 import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
+import common.peer.RunTimeStatistics;
 import common.simulation.BatchRequestResource;
 import common.simulation.ConsistentHashtable;
 import common.simulation.GenerateReport;
@@ -13,9 +14,14 @@ import common.simulation.PeerJoin;
 import common.simulation.RequestResource;
 import common.simulation.SimulatorInit;
 import common.simulation.SimulatorPort;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import se.sics.ipasdistances.AsIpGenerator;
 import se.sics.kompics.ChannelFilter;
 import se.sics.kompics.Component;
@@ -50,9 +56,10 @@ public final class DataCenterSimulator extends ComponentDefinition {
     private Long identifierSpaceSize;
     private ConsistentHashtable<Long> ringNodes;
     private AsIpGenerator ipGenerator = AsIpGenerator.getInstance(125);
+    private RunTimeStatistics stat;
     
     Random r = new Random(System.currentTimeMillis());
-	
+    
     public DataCenterSimulator() {
         peers = new HashMap<Long, Component>();
         peersAddress = new HashMap<Long, Address>();
@@ -65,6 +72,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
         subscribe(handleTerminateExperiment, simulator);
         subscribe(handleRequestResource, simulator);
         subscribe(handleBatchRequestResource, simulator);
+        stat = new RunTimeStatistics();
     }
 	
     Handler<SimulatorInit> handleInit = new Handler<SimulatorInit>() {
@@ -142,14 +150,40 @@ public final class DataCenterSimulator extends ComponentDefinition {
         @Override
         public void handle(TerminateExperiment event) {
             System.err.println("Finishing experiment - terminating....");
+//            printStatistics();
             System.exit(0);
         }
     };
     
+    private void printStatistics(){
+        try{
+            int i = 1;
+            String line;
+            BufferedReader br = new BufferedReader(new FileReader("testStat.tst"));
+            while ((line = br.readLine()) != null) {    
+                String[] timeStrings = line.split(","); 
+                for(String time : timeStrings){
+                    System.out.println((i++)+". "+"Time is: "+ time);
+                    stat.addAllocationTime(Long.parseLong(time));
+                    if(i > 5000)
+                        break;
+                }
+               if(i > 5000)
+                        break;
+            }
+            br.close();
+            stat.printAllData("testStatFinal.tst");
+            System.out.println("99:th percentile of AllocationTime: "+stat.get99thPercentileAllocationTimes());
+            System.out.println("Mean value of AllocationTime: "+stat.getAllocationTimeMeanValue());
+            }catch(IOException ex){
+                System.err.println("Problems reading statistics");
+            }
+    }
+    
     Handler<GenerateReport> handleGenerateReport = new Handler<GenerateReport>() {
         @Override
         public void handle(GenerateReport event) {
-            Snapshot.report();
+            //Snapshot.report();
         }
     };
 

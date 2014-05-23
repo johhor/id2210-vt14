@@ -56,6 +56,9 @@ public class BestSearchResponse {
     public BatchRequestHandler getBRH() {
         return brh;
     }
+    public void setBRH(BatchRequestHandler b) {
+        brh = b;
+    }
     public boolean isBatchSearch(){
         return brh != null;
     }

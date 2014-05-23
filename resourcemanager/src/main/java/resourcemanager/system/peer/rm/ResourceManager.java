@@ -29,8 +29,6 @@ import tman.system.peer.tman.TManSample;
 import tman.system.peer.tman.TManSamplePort;
 import tman.system.peer.tman.TManUpdateAvailableResourcesPort;
 import cyclon.system.peer.cyclon.CyclonUpdateAvailableResourcesPort;
-import se.sics.kompics.timer.CancelTimeout;
-import se.sics.kompics.timer.Timeout;
 
 /**
  * Should have some comments here.
@@ -112,7 +110,7 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(rst, timerPort);
             currId = MSG_ID_START_VALUE;
             avgMemPerCpu = 0.0;
-            stat = new RunTimeStatistics(self.getId());
+            stat = new RunTimeStatistics();
         }
     };
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
@@ -135,12 +133,14 @@ public final class ResourceManager extends ComponentDefinition {
                 brh.tryAddResponce(event);
                 if(brh.hasGoodAllocation()){
                     for(Address a : brh.getNodes()){
+                        Debuggln("Good Allocation found :3");
                         RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
                         trigger(allocate,networkPort);
                     }
                     requestResourceResponses.remove(event.getId());
                 }
                 else if(brh.allResponsesReceived()){
+                    Debuggln("Didnt get a good allocation, starting search :(");
                     brh.setSearching(true);
                     sendFirstSearchRequestsToNeighbour(brh.getBestResponse().getSource(),brh);
                     requestResourceResponses.remove(event.getId());
@@ -184,7 +184,7 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
-            System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
+//            System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // Ask for resources from neighbours by sending a ResourceRequest
             boolean useCPUGradient;
             try{
@@ -203,22 +203,20 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<BatchRequestResource> handleBatchRequest = new Handler<BatchRequestResource>() {
         @Override
         public void handle(BatchRequestResource e) {
-            Debuggln("Batch Request: Machines "+e.getNumMachines()+" CPUs"+e.getNumCpus()+" Mem: "+e.getMemoryInMbs()+" allocTime:"+e.getTimeToHoldResource());
+            Debuggln("Batch Request: Machines "+e.getNumMachines()+" CPUs: "+e.getNumCpus()+" Mem: "+e.getMemoryInMbs()+" allocTime:"+e.getTimeToHoldResource());
             boolean isCpu = isCpuDominantResourse(e.getMemoryInMbs(),e.getNumCpus());
             int msgID = getNewMsgId();
             ArrayList<PeerDescriptor> tempNeigh = new ArrayList<PeerDescriptor>(isCpu ? neighboursCPU : neighboursMEM);
             int numRequests = getAmountOfProbes(tempNeigh.size())*e.getNumMachines();
             requestResourceResponses.put(msgID, new BatchRequestHandler(numRequests, e, isCpu, getSystemTime(), msgID));
-           
-            for (int j = 0; j < numRequests; ) {
-                for (int i = 0; i < e.getNumMachines(); i++, j++) {
-                    sendRequestsToRandomNeighbourRound(msgID,tempNeigh,e.getNumCpus(), e.getMemoryInMbs(), e.getTimeToHoldResource(), isCpu,getSystemTime());
-                if(j >= numRequests)
-                    break;
-                }
-                if(j < numRequests)//This isnt needed the last lap
-                    tempNeigh = new ArrayList<PeerDescriptor>(isCpu ? neighboursCPU : neighboursMEM);
+            //Debugg("Number of requests: "+ numRequests);
+            int debuggLooP=0;
+            for (int i = 0; i < e.getNumMachines(); i++){
+                sendRequestsToRandomNeighbourRound(msgID,tempNeigh,e.getNumCpus(), e.getMemoryInMbs(), e.getTimeToHoldResource(), isCpu,getSystemTime());
+                debuggLooP++;
+                tempNeigh = new ArrayList<PeerDescriptor>(isCpu ? neighboursCPU : neighboursMEM);
             }            
+            //Debuggln(" Amount of actual loopsteps: "+debuggLooP);
             if(numRequests > 0){
                 ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
                 st.setTimeoutEvent(new RequestResources.RequestTimeout(st, msgID));
@@ -233,7 +231,7 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(TManSample event) {
             int sumMEM = 0;
             int sumCPU = 0;
-            System.out.println("Received samples: " + event.getSample().size());
+          //  System.out.println("Received samples: " + event.getSample().size());
             // receive a new list of neighbours
             if(event.isCPU()){
                 neighboursCPU = replaceAllKeepNewest(event.getSample(),neighboursCPU);
@@ -484,6 +482,8 @@ public final class ResourceManager extends ComponentDefinition {
             int msgId = getNewMsgId();
             SearchResourceMsg.Response response = new  SearchResourceMsg.Response(self, self, bestNeighbour, availableResources, msgId);
             BestSearchResponse bsr = new BestSearchResponse(rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(), rh.isCPUMsg(), response, rh.getTimeCreatedAt());
+            if(rh.isBatch())
+                bsr.setBRH((BatchRequestHandler)rh);
             searchResponses.put(msgId, bsr);    
             
             SearchResourceMsg.Request req = new SearchResourceMsg.Request(self, dest, bsr.isCpuMsg(), msgId);

@@ -18,12 +18,11 @@ import java.util.logging.Logger;
 public class RunTimeStatistics {
     private StatisticsSet<Long> allocationTimes;
     private StatisticsSet<Long> searchTimes;
-    private int nodeName;
-    public RunTimeStatistics(int nodeName){
+    
+    public RunTimeStatistics(){
         Comparator<Long> comp = createComparator();
         allocationTimes = new StatisticsSet<Long>(comp);
         searchTimes = new StatisticsSet<Long>(comp);
-        this.nodeName = nodeName;
     }
     
     public Comparator<Long> createComparator(){
@@ -37,23 +36,37 @@ public class RunTimeStatistics {
     private int t = 0;
     private int j=0;
     public void addAllocationTime(long time){
-        allocationTimes.addData(time);
-        
+        allocationTimes.addData(time);  
+        printData(time);
+    }
+    private void printData(long time){
+        printData("testStat.tst",time);
+    }
+    
+    public void printAllData(String fileName){
+        for(Long time : getAllocationTimes() ){
+            printData(fileName, time);
+        }
+    }
+    public void printData(String fileName,long time){
         try {
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+".tst",true)));
-                writer.print(time+", ");//"["+(++t)+"]"+time+", ");
-                if (++j > 9) {
-                    j=0;
-                    writer.println("");
-                }
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(fileName,true)));
+                    writer.print(time+",");
+//                    if (++j > 25) {
+//                        j=0;
+//                        writer.println("");
+//                    }
             writer.flush();
             writer.close();
         } catch (IOException ex) {
             Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
-        }  
+        }
     }
-    public void closeWriter(){
-            
+    public long getAllocationTimeMeanValue(){
+        long mean = 0;
+        for(Long l : allocationTimes.getData())
+            mean += l;
+        return mean/allocationTimes.getData().size();
     }
     public void addSearchTime(long time){
         allocationTimes.addData(time);
@@ -64,10 +77,10 @@ public class RunTimeStatistics {
     public ArrayList<Long> getSearchTimes(){
         return searchTimes.getData();
     }
-    public ArrayList<Long> get99thPercentileAllocationTimes(){
+    public long get99thPercentileAllocationTimes(){
          return allocationTimes.get99thPercentile();
     }
-    public ArrayList<Long> get99thPercentileSearchTimes(){
+    public long get99thPercentileSearchTimes(){
         return searchTimes.get99thPercentile();
     }
 }
