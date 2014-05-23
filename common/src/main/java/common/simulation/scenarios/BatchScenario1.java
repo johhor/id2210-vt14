@@ -5,7 +5,7 @@ import se.sics.kompics.p2p.experiment.dsl.SimulationScenario;
 
 @SuppressWarnings("serial")
 public class BatchScenario1 extends Scenario {
-	static final int NUM_PROCESSES = 100;
+	static final int NUM_PROCESSES = 50;
 
 	private static SimulationScenario scenario = new SimulationScenario() {
 		{
@@ -23,22 +23,21 @@ public class BatchScenario1 extends Scenario {
 
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(7));
-					raise(500, Operations.BatchRequestResources(),
+					eventInterArrivalTime(constant(30));
+					raise(50, Operations.BatchRequestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(2),
-							constant(2000), constant(5), constant(10 * 60 * 1) // 1
-																	// minute
+							constant(1), constant(5), constant(100 * 60 * 1) // 1sec
 					);
 				}
 			};
 
 			SimulationScenario.StochasticProcess failPeersProcess = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(100));
+					eventInterArrivalTime(constant(1000));
 					raise(1, Operations.peerFail, uniform(0, Integer.MAX_VALUE));
 				}
 			};
-			// failPeersProcess.start();
+			//failPeersProcess.start();
 
 			SimulationScenario.StochasticProcess terminateProcess = new SimulationScenario.StochasticProcess() {
 				{
