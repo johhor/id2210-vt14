@@ -10,10 +10,10 @@
 
 
     <modules>
-        <module>common</module>
         <module>cyclon</module>
         <module>resourcemanager</module>
         <module>tman</module>
+        <module>common</module>
     </modules>
 
     <properties>
