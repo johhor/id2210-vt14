@@ -24,7 +24,7 @@ public class BatchScenario extends Scenario {
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
 					eventInterArrivalTime(constant(1));
-					raise(100000, Operations.BatchRequestResources(),
+					raise(200, Operations.BatchRequestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(2),
 							constant(2000), constant(5), constant(10 * 60 * 1) // 1
 																	// minute

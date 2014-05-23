@@ -7,3 +7,4 @@ release.properties
 .project
 .settings
 resourcemanager/search.out
+*.tst

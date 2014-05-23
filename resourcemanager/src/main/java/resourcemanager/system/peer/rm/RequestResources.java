@@ -1,6 +1,8 @@
 package resourcemanager.system.peer.rm;
 
 import java.util.List;
+
+import javassist.expr.Instanceof;
 import se.sics.kompics.address.Address;
 import se.sics.kompics.network.Message;
 import se.sics.kompics.timer.ScheduleTimeout;
@@ -58,8 +60,14 @@ public class RequestResources  {
         public int getId(){
             return id;
         }
-        public void incrementQueueSize(){
-        	queueSize++;
+        @Override
+        public boolean equals(Object o) {
+        	if (o instanceof Response) {
+        		//used for distinct source in batchRequestHandler
+        		return ((Response) o).getSource().getId() == this.getSource().getId();
+        	} else {
+        		return false;
+        	}
         }
     }
     
