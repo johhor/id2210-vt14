@@ -214,10 +214,12 @@ public final class ResourceManager extends ComponentDefinition {
         				break;
         		}
         	}
-            ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
-            st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
-            trigger(st, timerPort);
-            currId++;
+        	if (numRequests>0) {
+        		ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
+        		st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
+        		trigger(st, timerPort);
+        		currId++;
+        	}
         }
     };
     
