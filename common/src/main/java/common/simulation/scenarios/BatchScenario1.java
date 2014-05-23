@@ -4,8 +4,8 @@ import com.sun.corba.se.impl.orbutil.closure.Constant;
 import se.sics.kompics.p2p.experiment.dsl.SimulationScenario;
 
 @SuppressWarnings("serial")
-public class Scenario2 extends Scenario {
-	static final int NUM_REQUESTING_PROCESSES = 200;
+public class BatchScenario1 extends Scenario {
+	static final int NUM_PROCESSES = 5;
 
 	private static SimulationScenario scenario = new SimulationScenario() {
 		{
@@ -13,7 +13,7 @@ public class Scenario2 extends Scenario {
 			SimulationScenario.StochasticProcess process0 = new SimulationScenario.StochasticProcess() {
 				{
 					eventInterArrivalTime(constant(1000));
-					raise(NUM_REQUESTING_PROCESSES, Operations.peerJoin(),
+					raise(NUM_PROCESSES, Operations.peerJoin(),
 							uniform(0, Integer.MAX_VALUE), constant(8),
 							constant(12000));
 				}
@@ -23,10 +23,10 @@ public class Scenario2 extends Scenario {
 
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(3));
-					raise(200, Operations.requestResources(),
+					eventInterArrivalTime(constant(150));
+					raise(50, Operations.BatchRequestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(2),
-							constant(2000), constant(10 * 60 * 1) // 1
+							constant(2000), constant(5), constant(10 * 60 * 1) // 1
 																	// minute
 					);
 				}
@@ -49,12 +49,12 @@ public class Scenario2 extends Scenario {
 			
 			process0.start();
 			process1.startAfterTerminationOf(2000, process0);
-			terminateProcess.startAfterTerminationOf(10000, process1);
+			terminateProcess.startAfterTerminationOf(200000, process1);
 		}
 	};
 
 	// -------------------------------------------------------------------
-	public Scenario2() {
+	public BatchScenario1() {
 		super(scenario);
 	}
 }

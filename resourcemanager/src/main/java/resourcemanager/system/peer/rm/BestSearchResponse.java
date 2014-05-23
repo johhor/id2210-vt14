@@ -11,20 +11,12 @@ package resourcemanager.system.peer.rm;
  * @author Linus
  */
 public class BestSearchResponse {
-    private final int numCpus;
-    private final int amountMemInMb;
-    private final int time;
-    private final boolean isCpuMsg;
-    private final long timeCreatedAt;
+    private RequestHandler requestHandler;
     SearchResourceMsg.Response bestResponse;
     
-    public BestSearchResponse(int numCpus, int amountMemInMb, int time, boolean isCpuMsg, SearchResourceMsg.Response bestResponse, long createdAt) {
-        this.numCpus = numCpus;
-        this.amountMemInMb = amountMemInMb;
-        this.time =time;
-        this.isCpuMsg = isCpuMsg;
+    public BestSearchResponse(RequestHandler rh, SearchResourceMsg.Response bestResponse) {
+        this.requestHandler = rh;
         this.bestResponse = bestResponse;
-        this.timeCreatedAt = createdAt;
     }
     
     public void replaceBestResponse(SearchResourceMsg.Response response) {
@@ -35,20 +27,7 @@ public class BestSearchResponse {
         return bestResponse;
     }
 
-    public boolean isCpuMsg() {
-        return isCpuMsg;
-    }
-    
-    public int getNumCpus() {
-        return numCpus;
-    }
-    public int getAmountMemInMb() {
-        return amountMemInMb;
-    }
-    public int getTime() {
-        return time;
-    }
-    public long getTimeCreatedAt() {
-        return timeCreatedAt;
+    public RequestHandler getRequestHandler() {
+    	return requestHandler;
     }
 }

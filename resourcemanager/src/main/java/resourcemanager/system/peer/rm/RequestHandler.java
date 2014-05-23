@@ -15,7 +15,7 @@ public class RequestHandler {
     private final int amountMemInMb;
     private final int time;
     private final boolean isCPUMsg;
-    private int waitingNumRes;
+    protected int waitingNumRes;
     private long timeCreatedAt;
     
     RequestResources.Response bestResponse;
@@ -63,5 +63,14 @@ public class RequestHandler {
 
     public long getTimeCreatedAt() {
         return timeCreatedAt;
+    }
+    public boolean isBatch() {
+    	return false;
+    }
+    public int getWaitingNumResponses() {
+    	return waitingNumRes;
+    }
+    public void setWaitingNumResponses(int waitingNumRes) {
+    	this.waitingNumRes = waitingNumRes;
     }
 }
