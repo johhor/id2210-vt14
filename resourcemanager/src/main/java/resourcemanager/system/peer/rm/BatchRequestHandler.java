@@ -8,19 +8,22 @@ import common.simulation.BatchRequestResource;
 import se.sics.kompics.address.Address;
 
 public class BatchRequestHandler extends RequestHandler{
-	
+        private final int id;
 	private ArrayList<Address> availableNodes;
 	private ArrayList<RequestResources.Response> busyNodes;
 	
 	int numMachines;
         private int numReceivedResponses;
-	
-	public BatchRequestHandler(int numRespToWaitOn, BatchRequestResource brr, long timeStartedAt){
-		super(numRespToWaitOn,brr.getNumCpus(),brr.getMemoryInMbs(),brr.getTimeToHoldResource(),timeStartedAt);
+	private boolean searching;
+        
+	public BatchRequestHandler(int numRespToWaitOn, BatchRequestResource brr,boolean isCPU, long timeStartedAt, int id){
+		super(numRespToWaitOn,brr.getNumCpus(),brr.getMemoryInMbs(),brr.getTimeToHoldResource(),isCPU,timeStartedAt);
 		availableNodes = new ArrayList<Address>();
 		busyNodes = new ArrayList<RequestResources.Response>();
 		numMachines = brr.getNumMachines();
                 numReceivedResponses = 0;
+                this.id = id;
+                searching = false;
 	}
 	@Override
 	public boolean isBatch(){
@@ -28,7 +31,7 @@ public class BatchRequestHandler extends RequestHandler{
 	}
 	
 	public boolean allResponsesReceived(){
-            return numReceivedResponses >= waitingNumRes;
+            return numReceivedResponses >= getWaitingNumRes();
 	}
 	public boolean hasBadAllocation() {
 		return availableNodes.size()+ busyNodes.size()>= numMachines;
@@ -38,10 +41,11 @@ public class BatchRequestHandler extends RequestHandler{
 	}
 	
 	public void tryAddResponce(RequestResources.Response e){
+            bestAndAllReceived(e);
             boolean notInSelected = !availableNodes.contains(e.getSource());
             numReceivedResponses++;
             //Only distinct allocatable  nodes without a queue are put in selected nodes
-            if(e.getQueueSize() == 0 && e.getSuccess() && notInSelected){
+            if(e.getQueueSize() == 0 && e.isAvailable()&& notInSelected){
                 this.availableNodes.add(e.getSource());
             }
             else if (!busyNodes.contains(e) && notInSelected){
@@ -82,13 +86,19 @@ public class BatchRequestHandler extends RequestHandler{
 	public void setSelectedNodes(ArrayList<Address> selectedNodes) {
 		this.availableNodes = selectedNodes;
 	}
-
     public int getNumMachines() {
         return numMachines;
     }
-
     public int getNumReceivedResponses() {
         return numReceivedResponses;
     }
-        
+    public int getId() {
+        return id;
+    }
+    public void setSearching(boolean s) {
+        searching = s;
+    }
+    public boolean isSearching() {
+        return searching;
+    }
 }

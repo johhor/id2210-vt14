@@ -17,6 +17,7 @@ public class BestSearchResponse {
     private final boolean isCpuMsg;
     private final long timeCreatedAt;
     SearchResourceMsg.Response bestResponse;
+    private BatchRequestHandler brh;
     
     public BestSearchResponse(int numCpus, int amountMemInMb, int time, boolean isCpuMsg, SearchResourceMsg.Response bestResponse, long createdAt) {
         this.numCpus = numCpus;
@@ -25,6 +26,7 @@ public class BestSearchResponse {
         this.isCpuMsg = isCpuMsg;
         this.bestResponse = bestResponse;
         this.timeCreatedAt = createdAt;
+        brh = null;
     }
     
     public void replaceBestResponse(SearchResourceMsg.Response response) {
@@ -50,5 +52,11 @@ public class BestSearchResponse {
     }
     public long getTimeCreatedAt() {
         return timeCreatedAt;
+    }
+    public BatchRequestHandler getBRH() {
+        return brh;
+    }
+    public boolean isBatchSearch(){
+        return brh != null;
     }
 }

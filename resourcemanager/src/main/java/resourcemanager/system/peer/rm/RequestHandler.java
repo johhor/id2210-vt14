@@ -20,13 +20,13 @@ public class RequestHandler {
     
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long currTime) {
+    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long startTime) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
         this.time =time;
         isCPUMsg = isCPU;
-        timeCreatedAt = currTime;
+        timeCreatedAt = startTime;
     }
     
     public RequestResources.Response bestAndAllReceived(RequestResources.Response response) {
@@ -43,7 +43,9 @@ public class RequestHandler {
             return bestResponse;
         return null;
     }
-
+    public boolean isBatch(){
+	return false;
+    }
     public RequestResources.Response getBestResponse() {
         return bestResponse;
     }
@@ -56,12 +58,15 @@ public class RequestHandler {
     public int getTime() {
         return time;
     }
-
     public boolean isCPUMsg() {
         return isCPUMsg;
     }
-
     public long getTimeCreatedAt() {
         return timeCreatedAt;
     }
+
+    public int getWaitingNumRes() {
+        return waitingNumRes;
+    }
+    
 }
