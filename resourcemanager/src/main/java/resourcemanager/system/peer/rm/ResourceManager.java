@@ -262,7 +262,7 @@ public final class ResourceManager extends ComponentDefinition {
                 else{
                     //Worst case is that we dont have any responces, in which case we allocate it all on our self
                     RequestResources.Allocate allocate = new RequestResources.Allocate(self, self, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
-                    for (int i = 0; i < brh.getNumMachines; i++) {
+                    for (int i = 0; i < brh.getNumMachines(); i++) {
                         trigger(allocate, networkPort);
                     }
                 }

@@ -86,4 +86,13 @@ public class BatchRequestHandler extends RequestHandler{
 	public void setSelectedNodes(ArrayList<Address> selectedNodes) {
 		this.availableNodes = selectedNodes;
 	}
+
+    public int getNumMachines() {
+        return numMachines;
+    }
+
+    public int getNumReceivedResponses() {
+        return numReceivedResponses;
+    }
+        
 }
