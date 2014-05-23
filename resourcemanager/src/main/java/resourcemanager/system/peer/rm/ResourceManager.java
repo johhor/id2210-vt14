@@ -234,7 +234,7 @@ public final class ResourceManager extends ComponentDefinition {
         public void handle(TaskFinished tf) {
             availableResources.release(tf.getNumCpus(), tf.getAmountMemInMb());
             
-            if (!taskQueue.isEmpty()){
+            while (!taskQueue.isEmpty()){
                  RequestResources.Allocate first = taskQueue.get(0);
                 if(availableResources.allocate(first.getNumCpus(),first.getAmountMemInMb())){
                     taskQueue.remove(0);
@@ -242,7 +242,9 @@ public final class ResourceManager extends ComponentDefinition {
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
                     stat.addAllocationTime(getTimeElapsedSince(first.getTimeCreatedAt()));
-                } 
+                } else {
+                	break;
+                }
             }
         }
     };
