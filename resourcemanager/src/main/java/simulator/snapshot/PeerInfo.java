@@ -13,6 +13,10 @@ public class PeerInfo {
         this.neighbours = new ArrayList<Address>();
         this.availableResources = availableResources;
     }
+    
+    public int getQueueLength() {
+    	return availableResources.getQueueLength();
+    }
 
     public int getNumFreeCpus() {
         return availableResources.getNumFreeCpus();

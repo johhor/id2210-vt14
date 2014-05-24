@@ -67,6 +67,9 @@ public class Snapshot {
         int minFreeCpus = Integer.MAX_VALUE;
         int maxFreeMemInMb = 0;
         int minFreeMemInMb = Integer.MAX_VALUE;
+        int maxQueue = 0;
+        int minQueue = Integer.MAX_VALUE;
+        
         for (PeerInfo p : peers.values()) {
             if (p.getNumFreeCpus() > maxFreeCpus) {
                 maxFreeCpus = p.getNumFreeCpus();
@@ -80,11 +83,19 @@ public class Snapshot {
             if (p.getFreeMemInMbs() < minFreeMemInMb) {
                 minFreeMemInMb = p.getFreeMemInMbs();
             }
+            if (p.getQueueLength()>maxQueue) {
+            	maxQueue = p.getQueueLength();
+            }
+            if (p.getQueueLength()<minQueue) {
+            	minQueue = p.getQueueLength();
+            }
         }
         str += "Peer with max num of free cpus: " + maxFreeCpus + "\n";
         str += "Peer with min num of free cpus: " + minFreeCpus + "\n";
         str += "Peer with max amount of free mem in MB: " + maxFreeMemInMb + "\n";
         str += "Peer with min amount of free mem in MB: " + minFreeMemInMb + "\n";
+        str += "Peer with max queue: " + maxQueue + "\n";
+        str += "Peer with min queue: " + minQueue + "\n";
 
         return str;
     }
