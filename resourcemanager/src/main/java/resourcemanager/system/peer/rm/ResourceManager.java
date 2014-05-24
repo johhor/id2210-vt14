@@ -84,7 +84,6 @@ public final class ResourceManager extends ComponentDefinition {
         subscribe(handleResourceAllocationRequest, networkPort);
         subscribe(handleResourceAllocationResponse, networkPort);
         subscribe(handleAllocate, networkPort);
-        subscribe(handleTManSample, tmanPort);
     }
 	
     Handler<RmInit> handleInit = new Handler<RmInit>() {
@@ -100,7 +99,7 @@ public final class ResourceManager extends ComponentDefinition {
             rst.setTimeoutEvent(new UpdateTimeout(rst));
             trigger(rst, timerPort);
             currId = 0;
-            stat = new RunTimeStatistics(self.getId());
+            stat = new RunTimeStatistics();
     }
 };
 
@@ -206,11 +205,11 @@ public final class ResourceManager extends ComponentDefinition {
             responses.put(currId, new BatchRequestHandler(numRequests,event,getSystemTime()));
                    ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
             
-                   for (int i=0; i<event.getNumMachines(); i++){
-                       sendRequestsToNeighboursRound(tempNeigh,event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
-                       if(tempNeigh.size() > amountOfProbes)
-                           tempNeigh = new ArrayList<Address>(neighbours);
-                   }
+            for (int i=0; i<event.getNumMachines(); i++){
+                sendRequestsToNeighboursRound(tempNeigh,event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
+                if(tempNeigh.size() > amountOfProbes)
+                    tempNeigh = new ArrayList<Address>(neighbours);
+                }
             if (numRequests>0) {
                        ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
                        st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
@@ -219,13 +218,7 @@ public final class ResourceManager extends ComponentDefinition {
             }
            }
     };
-    
-    Handler<TManSample> handleTManSample = new Handler<TManSample>() {
-        @Override
-        public void handle(TManSample event) {
-            // TODO: 
-        }
-    };
+
     Handler<TaskFinished> handleTaskFinished = new Handler<TaskFinished>() {
         @Override
         public void handle(TaskFinished tf) {
