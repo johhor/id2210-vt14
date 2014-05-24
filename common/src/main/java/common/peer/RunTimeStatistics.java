@@ -46,12 +46,8 @@ public class RunTimeStatistics {
 
 		try {
 			PrintWriter writer = new PrintWriter(new BufferedWriter(
-					new FileWriter("testStat" + nodeName + ".tst", true)));
-			writer.print(time + ", ");
-			if (++j > 9) {
-				j = 0;
-				writer.println("");
-			}
+					new FileWriter("temp.tst", true)));
+			writer.print(time + ",");
 
 			writer.flush();
 			writer.close();

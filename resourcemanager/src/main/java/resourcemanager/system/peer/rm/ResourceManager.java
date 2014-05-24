@@ -176,7 +176,7 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
-            System.out.println("Received samples: " + event.getSample().size());
+            //System.out.println("Received samples: " + event.getSample().size());
             
             // receive a new list of neighbours
             neighbours.clear();
