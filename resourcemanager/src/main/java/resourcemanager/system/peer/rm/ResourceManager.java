@@ -71,8 +71,6 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
-
-	
     public ResourceManager() {
 
         subscribe(handleInit, control);
@@ -188,7 +186,7 @@ public final class ResourceManager extends ComponentDefinition {
         @Override
         public void handle(RequestResource event) {
             
-            System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
+            //System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // TODO: Ask for resources from neighbours
             // by sending a ResourceRequest
             sendRequestsToNeighbours(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());

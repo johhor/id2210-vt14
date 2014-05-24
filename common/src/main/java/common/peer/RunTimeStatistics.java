@@ -40,7 +40,7 @@ public class RunTimeStatistics {
         printData(time);
     }
     private void printData(long time){
-        printData("testStat.tst",time);
+        printData("temp.tst",time);
     }
     
     public void printAllData(String fileName){

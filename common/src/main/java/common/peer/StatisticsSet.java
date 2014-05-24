@@ -27,13 +27,13 @@ public class StatisticsSet<T> {
         Collections.sort(statisticsList, comp);
         //95% of the list size
         double listSize = statisticsList.size();
-        int startIndex = (int)Math.floor(listSize*0.99);
-        if(startIndex == statisticsList.size())
-            startIndex = statisticsList.size() - 1;
-        if(startIndex < 0)
-            startIndex = 0;
+        int prcIndex = (int)Math.floor(listSize*0.99);
+        if(prcIndex == statisticsList.size())
+            prcIndex = statisticsList.size() - 1;
+        if(prcIndex < 0)
+            prcIndex = 0;
         //System.out.println("Startindex is:"+startIndex + " and size is: "+ statisticsList.size());
-        return new ArrayList<T>(statisticsList.subList(startIndex, statisticsList.size())).get(0);
+        return statisticsList.get(prcIndex);
     }
     
       /* Testing function for the percentile*/    
