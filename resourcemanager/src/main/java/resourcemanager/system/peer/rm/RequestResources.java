@@ -49,11 +49,9 @@ public class RequestResources  {
             this.success = success;
             this.id = id;
         }
-        
         public int getQueueSize(){
             return queueSize;
         }
-        
         public boolean getSuccess(){
             return success;
         }
@@ -70,19 +68,16 @@ public class RequestResources  {
         	}
         }
     }
-    
     public static class RequestTimeout extends Timeout {
         private final int id;
         RequestTimeout(ScheduleTimeout st, int id) {
             super(st);
             this.id = id;
         }
-
         public int getId() {
             return id;
         }
     }
-    
     public static class Allocate extends Message {
         private final int numCpus;
         private final int amountMemInMb;
@@ -96,9 +91,7 @@ public class RequestResources  {
             this.time = time;
             timeCreatedAt = createdAt;
         }
-
-
-		public int getNumCpus() {
+        public int getNumCpus() {
             return numCpus;
         }
         public int getAmountMemInMb() {
@@ -108,7 +101,7 @@ public class RequestResources  {
             return time;
         }
         public long getTimeCreatedAt() {
-			return timeCreatedAt;
-		}
+            return timeCreatedAt;
+	}
     }
 }

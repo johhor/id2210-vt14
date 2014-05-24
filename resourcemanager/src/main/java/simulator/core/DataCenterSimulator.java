@@ -25,6 +25,7 @@ import common.configuration.Configuration;
 import common.configuration.CyclonConfiguration;
 import common.configuration.TManConfiguration;
 import common.peer.AvailableResources;
+import common.peer.RunTimeStatistics;
 import common.simulation.BatchRequestResource;
 import common.simulation.ConsistentHashtable;
 import common.simulation.GenerateReport;
@@ -173,8 +174,9 @@ public final class DataCenterSimulator extends ComponentDefinition {
         		  System.err.println("Error: " + e.getMessage());
         	}
         	try {
-        		File file = new File("Statistics.tst");
+                    File file = new File("Statistics.tst");
       		    file.delete();
+                    RunTimeStatistics stat = new RunTimeStatistics();
                 PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Statistics"+".tst",true)));
                 int i = 0;
                 for (String s : stats) {
@@ -184,14 +186,18 @@ public final class DataCenterSimulator extends ComponentDefinition {
                         writer.println("");
                     }
                     writer.print(s+",");
+                    stat.addAllocationTime(Long.parseLong(s));
                 }
+                System.out.flush();
+                System.out.println("Amount of entriest: "+stats.length);
+                System.out.println("Mean value: "+stat.getAllocationTimeMeanValue());
+                System.out.println("99th percentile: "+stat.get99thPercentileAllocationTimes());
                 writer.flush();
                 writer.close();
             } catch (IOException ex) {
-                
-            }
-
+            }   
             System.err.println("Finishing experiment - terminating....");
+            System.out.flush();
             System.exit(0);
         }
     };
@@ -199,7 +205,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
     Handler<GenerateReport> handleGenerateReport = new Handler<GenerateReport>() {
         @Override
         public void handle(GenerateReport event) {
-            Snapshot.report();
+            //Snapshot.report();
         }
     };
 

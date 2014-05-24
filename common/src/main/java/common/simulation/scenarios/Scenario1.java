@@ -37,7 +37,7 @@ public class Scenario1 extends Scenario {
 					raise(1, Operations.peerFail, uniform(0, Integer.MAX_VALUE));
 				}
 			};
-			failPeersProcess.start();
+			//failPeersProcess.start();
 
 			SimulationScenario.StochasticProcess terminateProcess = new SimulationScenario.StochasticProcess() {
 				{

@@ -40,7 +40,6 @@ public class BatchRequestHandler extends RequestHandler{
 	public boolean hasGoodAllocation(){
 		return availableNodes.size()>= numMachines;
 	}
-	
 	public void tryAddResponce(RequestResources.Response e){
             boolean notInSelected = !availableNodes.contains(e.getSource());
             numReceivedResponses++;
@@ -53,21 +52,28 @@ public class BatchRequestHandler extends RequestHandler{
 		busyNodes.add(e);
             }
 	}
-	
 	public 	ArrayList<Address> getNodes(){
 		ArrayList<Address> nodes = new ArrayList<Address>(numMachines);
 		Comparator<RequestResources.Response> comp = getComp();
 		Collections.sort(busyNodes, comp);
-		
 		//pick nodes until number of machines is reached
+                StringBuffer DEBUGG = new StringBuffer(numMachines*64);
+                DEBUGG.append(hasGoodAllocation() ? "SUCCESS!+++++++++++++++++++++\n" : "FAILIURE!---------------------\n");
+                DEBUGG.append("Number of machines: "+numMachines+" ,num Available nodes: "+availableNodes.size()+"\n");
 		while (nodes.size()<numMachines) {
-			for (int i = 0; i < availableNodes.size() && nodes.size()<numMachines; i++) {
-				nodes.add(availableNodes.get(i));
+                    DEBUGG.append( "Avai-List: ");
+                    for (int i = 0; i < availableNodes.size() && nodes.size()<numMachines; i++) {
+                        DEBUGG.append(availableNodes.get(i).getId()+",");
+                        nodes.add(availableNodes.get(i));
 			}
-		
-			for (int i = 0; i < busyNodes.size() && nodes.size()<numMachines; i++) {
-				nodes.add(busyNodes.get(i).getSource());
-			}
+                    DEBUGG.append("\n");
+                            
+                    DEBUGG.append("Busy nodes: ");
+                    for (int i = 0; i < busyNodes.size() && nodes.size()<numMachines; i++) {
+                        DEBUGG.append(busyNodes.get(i).getSource().getId()+",");
+                        nodes.add(busyNodes.get(i).getSource());
+                    }
+                    System.out.println(DEBUGG);
 		}
 		return nodes;
 	}
