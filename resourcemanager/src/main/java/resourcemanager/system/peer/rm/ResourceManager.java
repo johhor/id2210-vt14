@@ -199,28 +199,25 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<BatchRequestResource> handleBatchRequestResource = new Handler<BatchRequestResource>() {
         @Override
         public void handle(BatchRequestResource event) {
-        	System.out.println("Batch request: "+event.getNumMachines()+" machines, each with "+event.getMemoryInMbs()+
-        			"amount of memory and "+event.getNumCpus()+" cores each, time: "+event.getTimeToHoldResource());
-        	
-        	int numRequests = getAmountOfProbes(neighbours.size()) * event.getNumMachines();
-        	responses.put(currId, new BatchRequestHandler(numRequests,event,getSystemTime()));
-        	
-        	//We use a double for loop to guarantee that we ask AMOUNT_OF_PROBES times for each nodes
-        	for(int j = 0; j < numRequests;){
-        		ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
-        		for (int i=0; i<event.getNumMachines(); i++, j++) {
-        			sendRequestsToNeighboursRound(tempNeigh,event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
-        			if(j >= numRequests)
-        				break;
-        		}
-        	}
-        	if (numRequests>0) {
-        		ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
-        		st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
-        		trigger(st, timerPort);
-        		currId++;
-        	}
-        }
+            //System.out.println("Batch request: "+event.getNumMachines()+" machines, each with "+event.getMemoryInMbs()+
+            //  "amount of memory and "+event.getNumCpus()+" cores each, time: "+event.getTimeToHoldResource());
+            int amountOfProbes = getAmountOfProbes(neighbours.size());
+            int numRequests = amountOfProbes * event.getNumMachines();
+            responses.put(currId, new BatchRequestHandler(numRequests,event,getSystemTime()));
+                   ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
+            
+                   for (int i=0; i<event.getNumMachines(); i++){
+                       sendRequestsToNeighboursRound(tempNeigh,event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
+                       if(tempNeigh.size() > amountOfProbes)
+                           tempNeigh = new ArrayList<Address>(neighbours);
+                   }
+            if (numRequests>0) {
+                       ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
+                       st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
+                       trigger(st, timerPort);
+                       currId++;
+            }
+           }
     };
     
     Handler<TManSample> handleTManSample = new Handler<TManSample>() {
