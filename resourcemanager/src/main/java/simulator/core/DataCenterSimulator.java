@@ -169,7 +169,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
         		  }
         		  in.close();
         		  File file = new File("temp.tst");
-        		  file.delete();
+                          file.deleteOnExit();
         	}catch (Exception e){//Catch exception if any
         		  System.err.println("Error: " + e.getMessage());
         	}
@@ -205,7 +205,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
     Handler<GenerateReport> handleGenerateReport = new Handler<GenerateReport>() {
         @Override
         public void handle(GenerateReport event) {
-            //Snapshot.report();
+            Snapshot.report();
         }
     };
 
