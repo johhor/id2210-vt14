@@ -40,12 +40,8 @@ public class RunTimeStatistics {
         allocationTimes.addData(time);
         
         try {
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("testStat"+".tst",true)));
-                writer.print(time+", ");//"["+(++t)+"]"+time+", ");
-                if (++j > 9) {
-                    j=0;
-                    writer.println("");
-                }
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("temp"+".tst",true)));
+            writer.print(time+",");//"["+(++t)+"]"+time+", ");
             writer.flush();
             writer.close();
         } catch (IOException ex) {
