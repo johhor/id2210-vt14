@@ -23,8 +23,8 @@ public class BatchScenario1 extends Scenario {
 
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(2000));
-					raise(200, Operations.BatchRequestResources(),
+					eventInterArrivalTime(constant(750));
+					raise(1000, Operations.BatchRequestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(4),
 							constant(1), constant(5), constant(60000) // 6sec
 					);
@@ -37,7 +37,7 @@ public class BatchScenario1 extends Scenario {
 					raise(1, Operations.peerFail, uniform(0, Integer.MAX_VALUE));
 				}
 			};
-			// failPeersProcess.start();
+			failPeersProcess.start();
 
 			SimulationScenario.StochasticProcess terminateProcess = new SimulationScenario.StochasticProcess() {
 				{
@@ -48,7 +48,7 @@ public class BatchScenario1 extends Scenario {
 			
 			process0.start();
 			process1.startAfterTerminationOf(2000, process0);
-			terminateProcess.startAfterTerminationOf(500000, process1);
+			terminateProcess.startAfterTerminationOf(200000, process1);
 		}
 	};
 

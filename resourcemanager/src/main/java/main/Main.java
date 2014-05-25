@@ -15,7 +15,7 @@ public class Main {
         long seed = System.currentTimeMillis();
         Configuration configuration = new Configuration(seed);
 
-        Scenario scenario = new Scenario2();
+        Scenario scenario = new BatchScenario2();
         scenario.setSeed(seed);
         scenario.getScenario().simulate(DataCenterSimulationMain.class);
     }
