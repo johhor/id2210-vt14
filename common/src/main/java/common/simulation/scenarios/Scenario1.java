@@ -5,7 +5,7 @@ import se.sics.kompics.p2p.experiment.dsl.SimulationScenario;
 
 @SuppressWarnings("serial")
 public class Scenario1 extends Scenario {
-	static final int NUM_PROCESSES = 100;
+	static final int NUM_PROCESSES = 200;
 
 	private static SimulationScenario scenario = new SimulationScenario() {
 		{
@@ -23,8 +23,8 @@ public class Scenario1 extends Scenario {
 
 			process1 = new SimulationScenario.StochasticProcess() {
 				{
-					eventInterArrivalTime(constant(300));
-					raise(1000, Operations.requestResources(),
+					eventInterArrivalTime(constant(150));
+					raise(5000, Operations.requestResources(),
 							uniform(0, Integer.MAX_VALUE), constant(4),
 							constant(1), constant(1000 * 60 * 1) //6 min
 					);

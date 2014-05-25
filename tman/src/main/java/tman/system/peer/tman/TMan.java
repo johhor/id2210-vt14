@@ -245,7 +245,6 @@ public final class TMan extends ComponentDefinition {
     
     public PeerDescriptor getSoftMaxCpu(List<PeerDescriptor> entries) {
         Collections.sort(entries, new ComparatorByCPU(getSelf()));
-
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
@@ -272,7 +271,6 @@ public final class TMan extends ComponentDefinition {
 
     public PeerDescriptor getSoftMaxMem(List<PeerDescriptor> entries) {
         Collections.sort(entries, new ComparatorByMEM(getSelf()));
-
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];

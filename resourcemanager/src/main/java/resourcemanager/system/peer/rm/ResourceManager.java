@@ -182,7 +182,7 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
-            System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
+            //System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
             // Ask for resources from neighbours by sending a ResourceRequest
             boolean useCPUGradient;
             try{
@@ -205,7 +205,7 @@ public final class ResourceManager extends ComponentDefinition {
     Handler<BatchRequestResource> handleBatchRequest = new Handler<BatchRequestResource>() {
         @Override
         public void handle(BatchRequestResource event) {
-        	System.out.println("Machines: "+event.getNumMachines()+" CPUs: "+event.getNumCpus()+" Mem: "+event.getMemoryInMbs()+" Time: "+event.getTimeToHoldResource());
+        	//System.out.println("Machines: "+event.getNumMachines()+" CPUs: "+event.getNumCpus()+" Mem: "+event.getMemoryInMbs()+" Time: "+event.getTimeToHoldResource());
         	Long createdAt = getSystemTime();
         	boolean useCPUGradient;
             try{
