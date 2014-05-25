@@ -244,18 +244,6 @@ public final class TMan extends ComponentDefinition {
     
     public PeerDescriptor getSoftMaxCpu(List<PeerDescriptor> entries) {
         Collections.sort(entries, new ComparatorByCPU(getSelf()));
-        boolean PRINT_DIFF = false;
-        PeerDescriptor last = entries.get(0);
-        for(PeerDescriptor p : entries){
-            if(last.getAvailableResources().getNumFreeCpus() != p.getAvailableResources().getNumFreeCpus())
-                PRINT_DIFF = true;
-         }
-        if(PRINT_DIFF){
-            System.out.println("CPU list in TMan: ");
-            for(PeerDescriptor p : entries)
-                System.out.print(p.getAvailableResources().getNumFreeCpus()+",");
-            System.out.println();
-        }
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
@@ -282,19 +270,6 @@ public final class TMan extends ComponentDefinition {
 
     public PeerDescriptor getSoftMaxMem(List<PeerDescriptor> entries) {
         Collections.sort(entries, new ComparatorByMEM(getSelf()));
-        boolean PRINT_DIFF = false;
-        PeerDescriptor last = entries.get(0);
-        for(PeerDescriptor p : entries){
-            if(last.getAvailableResources().getFreeMemInMbs()!= p.getAvailableResources().getFreeMemInMbs())
-                PRINT_DIFF = true;
-         }
-        if(PRINT_DIFF){
-            System.out.println("MEM list in TMan: ");
-            for(PeerDescriptor p : entries)
-                System.out.print(p.getAvailableResources().getFreeMemInMbs()+",");
-            System.out.println();
-        }
-  
         double rnd = r.nextDouble();
         double total = 0.0d;
         double[] values = new double[entries.size()];
