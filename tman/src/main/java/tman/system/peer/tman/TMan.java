@@ -196,7 +196,8 @@ public final class TMan extends ComponentDefinition {
 
     /*Selects a random peer from the the top 50% of peers in the current view*/
     private PeerDescriptor selectPeer(boolean isCPU) {
-        ArrayList<PeerDescriptor> buffer = new ArrayList<PeerDescriptor>(isCPU ? tmanCPUPartners: tmanMEMPartners);
+        ArrayList<PeerDescriptor> buffer = isCPU ? 
+                new ArrayList<PeerDescriptor>(tmanCPUPartners) : new ArrayList<PeerDescriptor>(tmanMEMPartners);
         ArrayList<PeerDescriptor> sample = new ArrayList<PeerDescriptor>();
         int loopLength = buffer.size();
         for (int i = 0; i < loopLength; i++) {
