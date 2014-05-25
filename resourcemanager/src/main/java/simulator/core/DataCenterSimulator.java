@@ -198,7 +198,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
     Handler<GenerateReport> handleGenerateReport = new Handler<GenerateReport>() {
         @Override
         public void handle(GenerateReport event) {
-            Snapshot.report();
+            //Snapshot.report();
         }
     };
 
