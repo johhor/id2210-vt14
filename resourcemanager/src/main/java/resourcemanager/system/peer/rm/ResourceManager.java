@@ -42,6 +42,7 @@ public final class ResourceManager extends ComponentDefinition {
     static final int MAX_NUM_PROBES = 4;
     static final int EMPTY_INDEX = Integer.MIN_VALUE;
     static final int MSG_ID_START_VALUE = Integer.MIN_VALUE+1;
+    private final String TMP_FILE_NAME = "temp.tst";
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceManager.class);
     Positive<RmPort> indexPort = positive(RmPort.class);
@@ -112,7 +113,7 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(rst, timerPort);
             currId = MSG_ID_START_VALUE;
             avgMemPerCpu = 0.0;
-            stat = new RunTimeStatistics(self.getId());
+            stat = new RunTimeStatistics();
         }
     };
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
@@ -175,7 +176,7 @@ public final class ResourceManager extends ComponentDefinition {
                 st.setTimeoutEvent(new TaskFinished(st, event.getNumCpus(), event.getAmountMemInMb()));
                 trigger(st, timerPort);
                 long timeToSchedule = getTimeElapsedUntilNowFrom(event.getTimeCreatedAt());
-                stat.addAllocationTime(timeToSchedule);
+                stat.printData(TMP_FILE_NAME,timeToSchedule);
             }
         }
     };
@@ -263,7 +264,7 @@ public final class ResourceManager extends ComponentDefinition {
                     ScheduleTimeout st = new ScheduleTimeout(first.getTime());
                     st.setTimeoutEvent(new TaskFinished(st, first.getNumCpus(), first.getAmountMemInMb()));
                     trigger(st, timerPort);
-                    stat.addAllocationTime(getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()));
+                    stat.printData(TMP_FILE_NAME,getTimeElapsedUntilNowFrom(first.getTimeCreatedAt()));
                 }
             }
         }

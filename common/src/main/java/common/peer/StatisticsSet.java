@@ -23,49 +23,15 @@ public class StatisticsSet<T> {
         return statisticsList;
     }
     
-    public ArrayList<T> get99thPercentile(){
+    public T get99thPercentile(){
         Collections.sort(statisticsList, comp);
         //95% of the list size
         double listSize = statisticsList.size();
-        int startIndex = (int)Math.floor(listSize*0.99);
-        if(startIndex == statisticsList.size())
-            startIndex = statisticsList.size() - 1;
-        
-        //System.out.println("Startindex is:"+startIndex + " and size is: "+ statisticsList.size());
-        return new ArrayList<T>(statisticsList.subList(startIndex, statisticsList.size()));
+        int prcIndex = (int)Math.floor(listSize*0.99);
+        if(prcIndex == statisticsList.size())
+            prcIndex = statisticsList.size() - 1;
+        if(prcIndex < 0)
+            prcIndex = 0;
+        return statisticsList.get(prcIndex);
     }
-    
-      /* Testing function for the percentile*/    
-//    public static void main(String[] args){
-//        Comparator<Double> comp = new Comparator<Double>() {
-//
-//            @Override
-//            public int compare(Double o1, Double o2) {
-//                return Double.compare(o1, o2);
-//            }
-//        };
-//        StatisticsSet<Double> set = new StatisticsSet<Double>(comp);
-//        
-//        for(double i = 0; i < 1000; i += 0.1){
-//            set.addData(i);
-//        }
-////        set.addData(0.1);
-////        set.addData(0.2);
-//        
-//        ArrayList<Double> percentil = set.get99thPercentile();
-//        int j = 0;
-//        for(int i = 0; i < percentil.size(); i++){
-//            double d = percentil.get(i);
-//            
-//            System.out.print(d); 
-//            if (percentil.size()-1 > i)
-//                System.out.print( " , ");
-//            j++;
-//            if(j > 10){
-//                System.out.println();
-//                j=0;
-//            }
-//        }
-//        System.out.print("\n\n");
-//    }
 }

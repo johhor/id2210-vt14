@@ -18,12 +18,11 @@ import java.util.logging.Logger;
 public class RunTimeStatistics {
     private StatisticsSet<Long> allocationTimes;
     private StatisticsSet<Long> searchTimes;
-    private int nodeName;
-    public RunTimeStatistics(int nodeName){
+    
+    public RunTimeStatistics(){
         Comparator<Long> comp = createComparator();
         allocationTimes = new StatisticsSet<Long>(comp);
         searchTimes = new StatisticsSet<Long>(comp);
-        this.nodeName = nodeName;
     }
     
     public Comparator<Long> createComparator(){
@@ -37,19 +36,31 @@ public class RunTimeStatistics {
     private int t = 0;
     private int j=0;
     public void addAllocationTime(long time){
-        allocationTimes.addData(time);
-        
+        allocationTimes.addData(time);  
+    }    
+    public void printAllData(String fileName){
+        for(Long time : getAllocationTimes() ){
+            printData(fileName, time);
+        }
+    }
+    public void printData(String fileName,long time){
         try {
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("temp"+".tst",true)));
-            writer.print(time+",");//"["+(++t)+"]"+time+", ");
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(fileName,true)));
+            writer.print(time+",");
             writer.flush();
             writer.close();
         } catch (IOException ex) {
             Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
-        }  
+        }
     }
-    public void closeWriter(){
-            
+    public Long getAllocationTimeMeanValue(){
+        long sum = 0;
+        for(Long l : allocationTimes.getData())
+            sum += l;
+        int size = allocationTimes.getData().size();
+        if(size <= 0)
+            return new Long(0);
+        return sum/size;
     }
     public void addSearchTime(long time){
         allocationTimes.addData(time);
@@ -60,10 +71,13 @@ public class RunTimeStatistics {
     public ArrayList<Long> getSearchTimes(){
         return searchTimes.getData();
     }
-    public ArrayList<Long> get99thPercentileAllocationTimes(){
-         return allocationTimes.get99thPercentile();
+    public long get99thPercentileAllocationTimes(){
+        Long tmp = allocationTimes.get99thPercentile();
+        if (tmp == null)
+            return 0;
+        return allocationTimes.get99thPercentile();
     }
-    public ArrayList<Long> get99thPercentileSearchTimes(){
+    public Long get99thPercentileSearchTimes(){
         return searchTimes.get99thPercentile();
     }
 }

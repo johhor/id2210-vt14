@@ -64,7 +64,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
     private Long identifierSpaceSize;
     private ConsistentHashtable<Long> ringNodes;
     private AsIpGenerator ipGenerator = AsIpGenerator.getInstance(125);
-    
+    private RunTimeStatistics rstat;
     Random r = new Random(System.currentTimeMillis());
 	
     public DataCenterSimulator() {
@@ -98,7 +98,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
             SchedulePeriodicTimeout spt = new SchedulePeriodicTimeout(snapshotPeriod, snapshotPeriod);
             spt.setTimeoutEvent(new GenerateReport(spt));
             trigger(spt, timer);
-
+            rstat = new RunTimeStatistics();
         }
     };
         
@@ -157,6 +157,7 @@ public final class DataCenterSimulator extends ComponentDefinition {
         public void handle(TerminateExperiment event) {
         	//Fix statistics
         	String[] stats = null;
+                rstat = new RunTimeStatistics();
         	try{
         		  FileInputStream fstream = new FileInputStream("temp.tst");
         		  DataInputStream in = new DataInputStream(fstream);
@@ -173,20 +174,25 @@ public final class DataCenterSimulator extends ComponentDefinition {
         		  System.err.println("Error: " + e.getMessage());
         	}
         	try {
-        		File file = new File("Statistics.tst");
+                    File file = new File("Statistics.tst");
       		    file.delete();
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Statistics"+".tst",true)));
-                int i = 0;
-                for (String s : stats) {
+                    PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter("Statistics"+".tst",true)));
+                    int i = 0;
+                    for (String s : stats) {
                 	i++;
-                    if (i>=100) {
-                        i=0;
-                        writer.println("");
-                    }
+                        if (i>=100) {
+                            i=0;
+                            writer.println("");
+                        }
                     writer.print(s+",");
+                    rstat.addAllocationTime(Long.parseLong(s));
                 }
+                System.out.println("Amount of entires: " + stats.length);                
+                System.out.println("Mean Allocation Time: "+ rstat.getAllocationTimeMeanValue());
+                System.out.println("99th percentile of Allocation Time: "+ rstat.get99thPercentileAllocationTimes());
                 writer.flush();
                 writer.close();
+                System.out.flush();
             } catch (IOException ex) {
                 Logger.getLogger(RunTimeStatistics.class.getName()).log(Level.SEVERE, null, ex);
             }
