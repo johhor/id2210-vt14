@@ -10,7 +10,7 @@ package resourcemanager.system.peer.rm;
  *
  * @author Linus
  */
-public class RequestHandler {
+public class RequestEntity {
     private final int numCpus;
     private final int amountMemInMb;
     private final int time;
@@ -20,7 +20,7 @@ public class RequestHandler {
     
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long currTime) {
+    public RequestEntity(int waitingNumRes, int numCpus, int amountMemInMb, int time, boolean isCPU, long currTime) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;

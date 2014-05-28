@@ -45,9 +45,6 @@ public final class TMan extends ComponentDefinition {
     private Random r;
     private AvailableResources availableResources;
 
-    private int randomViewUpdateCounter;
-    private int currId;
-
     public class TManSchedule extends Timeout {
 
         public TManSchedule(SchedulePeriodicTimeout request) {
@@ -81,7 +78,6 @@ public final class TMan extends ComponentDefinition {
             SchedulePeriodicTimeout rst = new SchedulePeriodicTimeout(period, period);
             rst.setTimeoutEvent(new TManSchedule(rst));
             trigger(rst, timerPort);
-            currId = 0;
         }
     };
     /*Creates a new Gradient descriptor with age 0*/
@@ -131,7 +127,6 @@ public final class TMan extends ComponentDefinition {
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
-            randomViewUpdateCounter = 0;
             randomView = event.getSample();
             if (tmanCPUPartners.isEmpty()) {
                 merge(tmanCPUPartners,randomView);

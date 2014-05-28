@@ -10,11 +10,11 @@ package resourcemanager.system.peer.rm;
  *
  * @author Linus
  */
-public class BestSearchResponse {
-    private RequestHandler requestHandler;
+public class SearchEntity {
+    private RequestEntity requestHandler;
     SearchResourceMsg.Response bestResponse;
     
-    public BestSearchResponse(RequestHandler rh, SearchResourceMsg.Response bestResponse) {
+    public SearchEntity(RequestEntity rh, SearchResourceMsg.Response bestResponse) {
         this.requestHandler = rh;
         this.bestResponse = bestResponse;
     }
@@ -27,7 +27,7 @@ public class BestSearchResponse {
         return bestResponse;
     }
 
-    public RequestHandler getRequestHandler() {
+    public RequestEntity getRequestHandler() {
     	return requestHandler;
     }
 }

@@ -9,7 +9,7 @@ import common.simulation.BatchRequestResource;
 
 import se.sics.kompics.address.Address;
 
-public class BatchRequestHandler extends RequestHandler{
+public class BatchRequestEntity extends RequestEntity{
 	
 	private ArrayList<Address> availableNodes;
 	private ArrayList<RequestResources.Response> busyNodes;
@@ -17,7 +17,7 @@ public class BatchRequestHandler extends RequestHandler{
 	int numMachines;
     private int numReceivedResponses;
 	
-	public BatchRequestHandler(int numRespToWaitOn, BatchRequestResource brr, boolean isCpu, long timeStartedAt){
+	public BatchRequestEntity(int numRespToWaitOn, BatchRequestResource brr, boolean isCpu, long timeStartedAt){
 		super(numRespToWaitOn,brr.getNumCpus(),brr.getMemoryInMbs(),brr.getTimeToHoldResource(), isCpu, timeStartedAt);
 		availableNodes = new ArrayList<Address>();
 		busyNodes = new ArrayList<RequestResources.Response>();
