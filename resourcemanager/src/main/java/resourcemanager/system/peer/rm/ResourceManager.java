@@ -53,9 +53,9 @@ public final class ResourceManager extends ComponentDefinition {
  
     ArrayList<RequestResources.Allocate> taskQueue = new ArrayList<RequestResources.Allocate>();
     //Stores respoce with smallest queue to request sent, stored by Request ID.
-    HashMap<Integer,RequestHandler> responses = new HashMap<Integer,RequestHandler>(); 
+    HashMap<Integer,RequestEntity> responses = new HashMap<Integer,RequestEntity>(); 
     
-    int currId;
+    int currId; //counter for message id
     private Address self;
     private RmConfiguration configuration;
     Random random;
@@ -77,7 +77,6 @@ public final class ResourceManager extends ComponentDefinition {
         subscribe(handleCyclonSample, cyclonSamplePort);
         subscribe(handleRequestResource, indexPort);
         subscribe(handleBatchRequestResource, indexPort);
-        subscribe(handleUpdateTimeout, timerPort);
         subscribe(handleTaskFinished, timerPort);
         subscribe(handleResourceAllocationRequest, networkPort);
         subscribe(handleResourceAllocationResponse, networkPort);
@@ -100,23 +99,7 @@ public final class ResourceManager extends ComponentDefinition {
             stat = new RunTimeStatistics();
     }
 };
-
-    Handler<UpdateTimeout> handleUpdateTimeout = new Handler<UpdateTimeout>() {
-        @Override
-        public void handle(UpdateTimeout event) {
-
-            // pick a random neighbour to ask for index updates from. 
-            // You can change this policy if you want to.
-            // Maybe a gradient neighbour who is closer to the leader?
-            if (neighbours.isEmpty()) {
-                return;
-            }
-            Address dest = neighbours.get(random.nextInt(neighbours.size()));
-
-
-        }
-    };
-
+	//handles a request of resources and response with ststus
     Handler<RequestResources.Request> handleResourceAllocationRequest = new Handler<RequestResources.Request>() {
         @Override
         public void handle(RequestResources.Request event) {
@@ -125,26 +108,30 @@ public final class ResourceManager extends ComponentDefinition {
             trigger(response, networkPort); 
         }
     };
+    
+    //handle response status from a request
     Handler<RequestResources.Response> handleResourceAllocationResponse = new Handler<RequestResources.Response>() {
         @Override
         public void handle(RequestResources.Response event) {
-            RequestHandler rh = responses.get(event.getId());
-            if (rh == null){
+            RequestEntity re = responses.get(event.getId()); //get the originally sent request
+            if (re == null){
                 return;
         	}
-            if(!rh.isBatch()){
-            	RequestResources.Response best = rh.isBestResponse(event);
+            if(!re.isBatch()){
+            	RequestResources.Response best = re.isBestResponse(event);
+            	//if all responses is received
             	if (best != null) {
-            		RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), rh.getNumCpus(), rh.getAmountMemInMb(), rh.getTime(),rh.getTimeCreatedAt());
+            		RequestResources.Allocate allocate = new RequestResources.Allocate(self, best.getSource(), re.getNumCpus(), re.getAmountMemInMb(), re.getTime(),re.getTimeCreatedAt());
             		trigger(allocate, networkPort);
             		responses.remove(event.getId());
             	}
-            }else if(rh.isBatch()){
-            	BatchRequestHandler brh = (BatchRequestHandler)rh;
-            	brh.tryAddResponce(event);
-            	if(brh.hasGoodAllocation()||brh.allResponsesReceived()){
-            		for(Address a : brh.getNodes()){
-            			RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
+            }else if(re.isBatch()){
+            	BatchRequestEntity bre = (BatchRequestEntity)re;
+            	bre.tryAddResponce(event);
+            	//if enough number of free machines or all responses received, allocate
+            	if(bre.hasGoodAllocation()||bre.allResponsesReceived()){
+            		for(Address a : bre.getNodes()){
+            			RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, bre.getNumCpus(), bre.getAmountMemInMb(), bre.getTime(),bre.getTimeCreatedAt());
             			trigger(allocate, networkPort);
             		}
                     responses.remove(event.getId());
@@ -152,7 +139,7 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
-    
+    //allocate given resources
     Handler<RequestResources.Allocate> handleAllocate = new Handler<RequestResources.Allocate>() {
 
         @Override
@@ -170,37 +157,29 @@ public final class ResourceManager extends ComponentDefinition {
         }
     };
     
+    //update neighbours by the new sample
     Handler<CyclonSample> handleCyclonSample = new Handler<CyclonSample>() {
         @Override
         public void handle(CyclonSample event) {
-            //System.out.println("Received samples: " + event.getSample().size());
-            
-            // receive a new list of neighbours
             neighbours.clear();
             neighbours.addAll(event.getSample());
 
         }
     };
-
+    //request resource message is received from the simulator, ask neighbours about their resources
     Handler<RequestResource> handleRequestResource = new Handler<RequestResource>() {
         @Override
         public void handle(RequestResource event) {
-            
-            //System.out.println("Allocate resources: " + event.getNumCpus() + " + " + event.getMemoryInMbs());
-            // TODO: Ask for resources from neighbours
-            // by sending a ResourceRequest
             sendRequestsToNeighbours(event.getNumCpus(), event.getMemoryInMbs(), event.getTimeToHoldResource(),getSystemTime());
         }
     };
-    
+    //BatchRequest is received from the simulator, ask neighbours about the resources
     Handler<BatchRequestResource> handleBatchRequestResource = new Handler<BatchRequestResource>() {
         @Override
         public void handle(BatchRequestResource event) {
-            //System.out.println("Batch request: "+event.getNumMachines()+" machines, each with "+event.getMemoryInMbs()+
-            //  "amount of memory and "+event.getNumCpus()+" cores each, time: "+event.getTimeToHoldResource());
             int amountOfProbes = getAmountOfProbes(neighbours.size());
             int numRequests = amountOfProbes * event.getNumMachines();
-            responses.put(currId, new BatchRequestHandler(numRequests,event,getSystemTime()));
+            responses.put(currId, new BatchRequestEntity(numRequests,event,getSystemTime()));
                    ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
             
             for (int i=0; i<event.getNumMachines(); i++){
@@ -208,6 +187,7 @@ public final class ResourceManager extends ComponentDefinition {
                 if(tempNeigh.size() > amountOfProbes)
                     tempNeigh = new ArrayList<Address>(neighbours);
                 }
+            //if no neighbours, allocate on self
             if (numRequests>0) {
                        ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
                        st.setTimeoutEvent(new RequestResources.RequestTimeout(st, currId));
@@ -216,7 +196,7 @@ public final class ResourceManager extends ComponentDefinition {
             }
            }
     };
-
+    //if a task has finished, release the resources, try to pick next from the queue
     Handler<TaskFinished> handleTaskFinished = new Handler<TaskFinished>() {
         @Override
         public void handle(TaskFinished tf) {
@@ -236,15 +216,16 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
+    
+    //if not all responses is received within the timeout, allocate the resources
     Handler<RequestResources.RequestTimeout> handleRequestTimeout = new Handler<RequestResources.RequestTimeout>() {
-
         @Override
         public void handle(RequestResources.RequestTimeout e) {
-            RequestHandler rh = responses.get(e.getId());
+            RequestEntity rh = responses.get(e.getId());
             if(rh == null)
             	return;
             if(rh.isBatch()){
-            	BatchRequestHandler brh = (BatchRequestHandler)rh;
+            	BatchRequestEntity brh = (BatchRequestEntity)rh;
                 if(brh.getNumReceivedResponses()>0){
                     for(Address a : brh.getNodes()){
                         RequestResources.Allocate allocate = new RequestResources.Allocate(self, a, brh.getNumCpus(), brh.getAmountMemInMb(), brh.getTime(),brh.getTimeCreatedAt());
@@ -273,10 +254,12 @@ public final class ResourceManager extends ComponentDefinition {
             }
         }
     };
+    
+    //add a new request entity and then send requests to neighbours
     private void sendRequestsToNeighbours(int numCpus, int memoryInMb, int timeToHoldResource,long requestedAt) {
     	ArrayList<Address> tempNeigh = new ArrayList<Address>(neighbours);
     	int amountOfProbes = getAmountOfProbes(tempNeigh.size());
-    	responses.put(currId, new RequestHandler(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,requestedAt));
+    	responses.put(currId, new RequestEntity(amountOfProbes, numCpus, memoryInMb, timeToHoldResource,requestedAt));
     	sendRequestsToNeighboursRound(tempNeigh,numCpus, memoryInMb, timeToHoldResource,requestedAt);
     	if(getAmountOfProbes(tempNeigh.size())>0){
             ScheduleTimeout st = new ScheduleTimeout(STANDARD_TIME_OUT_DELAY);
@@ -285,6 +268,7 @@ public final class ResourceManager extends ComponentDefinition {
     		currId++;
     	}
     }
+    //send requests to neighbours
     private void sendRequestsToNeighboursRound(ArrayList<Address> tempNeigh,int numCpus, int memoryInMb, int timeToHoldResource,long requestedAt) {
         
         int amountOfProbes = getAmountOfProbes(tempNeigh.size());

@@ -12,7 +12,7 @@ import org.mortbay.jetty.handler.ResourceHandler;
  *
  * @author Linus
  */
-public class RequestHandler {
+public class RequestEntity {
     private final int numCpus;
     private final int amountMemInMb;
     private final int time;
@@ -20,7 +20,7 @@ public class RequestHandler {
     int waitingNumRes;
     RequestResources.Response bestResponse;
     
-    public RequestHandler(int waitingNumRes, int numCpus, int amountMemInMb, int time, long createdAt) {
+    public RequestEntity(int waitingNumRes, int numCpus, int amountMemInMb, int time, long createdAt) {
         this.waitingNumRes = waitingNumRes;
         this.numCpus = numCpus;
         this.amountMemInMb = amountMemInMb;
